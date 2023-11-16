@@ -9,8 +9,8 @@
     <stylesheets>
         <URL value="@../css/global.css"/>
     </stylesheets>
-    <VBox alignment="TOP_CENTER" prefHeight="217.6" prefWidth="800.0" spacing="10.0" AnchorPane.bottomAnchor="0.0"
-          AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+    <VBox alignment="TOP_CENTER" spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 
         <GridPane alignment="CENTER" hgap="10" vgap="10">
 
