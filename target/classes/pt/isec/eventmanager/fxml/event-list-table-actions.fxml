@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import java.net.URL?>
+<AnchorPane maxWidth="-Infinity" minWidth="-Infinity" prefWidth="250.0" xmlns="http://javafx.com/javafx/18.0.2"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="pt.isec.eventmanager.client.EventListTableActionsController">
+    <stylesheets>
+        <URL value="@../css/global.css"/>
+    </stylesheets>
+    <HBox alignment="BASELINE_CENTER" spacing="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <Button fx:id="generateKeyButton" alignment="CENTER" contentDisplay="GRAPHIC_ONLY" graphicTextGap="0.0"
+                mnemonicParsing="false"
+                onAction="#handleGenerateKeyAction">
+            <graphic>
+                <ImageView pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/vpn_key.png"/>
+                </ImageView>
+            </graphic>
+        </Button>
+        <Button fx:id="infoButton" alignment="CENTER" contentDisplay="GRAPHIC_ONLY" graphicTextGap="0.0"
+                mnemonicParsing="false"
+                onAction="#handleInfoAction">
+            <graphic>
+                <ImageView pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/info.png"/>
+                </ImageView>
+            </graphic>
+        </Button>
+        <Button fx:id="editButton" alignment="CENTER" contentDisplay="GRAPHIC_ONLY" graphicTextGap="0.0"
+                mnemonicParsing="false"
+                onAction="#handleEditAction">
+            <graphic>
+                <ImageView pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/edit.png"/>
+                </ImageView>
+            </graphic>
+        </Button>
+        <Button fx:id="deleteButton" alignment="CENTER" contentDisplay="GRAPHIC_ONLY" graphicTextGap="0.0"
+                mnemonicParsing="false"
+                onAction="#handleDeleteAction">
+            <graphic>
+                <ImageView pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/delete.png"/>
+                </ImageView>
+            </graphic>
+        </Button>
+    </HBox>
+</AnchorPane>

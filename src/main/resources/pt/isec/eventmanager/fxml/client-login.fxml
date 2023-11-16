@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import java.net.URL?>
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0"
+            prefWidth="1000.0" styleClass="startingPane" xmlns="http://javafx.com/javafx/18.0.2"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="pt.isec.eventmanager.client.ClientLoginController">
+    <stylesheets>
+        <URL value="@../css/global.css"/>
+    </stylesheets>
+    <GridPane prefHeight="800.0" prefWidth="1000.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints percentHeight="40.0" vgrow="SOMETIMES"/>
+            <RowConstraints percentHeight="40.0" vgrow="SOMETIMES"/>
+            <RowConstraints percentHeight="20" vgrow="SOMETIMES"/>
+        </rowConstraints>
+        <VBox alignment="CENTER" prefHeight="1000.0" prefWidth="1000.0">
+            <VBox alignment="TOP_CENTER">
+                <ImageView fitHeight="174.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/eventmanager_logo.png"/>
+                </ImageView>
+            </VBox>
+        </VBox>
+        <VBox alignment="BOTTOM_CENTER" spacing="50.0" GridPane.rowIndex="1">
+            <VBox alignment="TOP_CENTER" spacing="5.0">
+                <TextField fx:id="nameField" maxHeight="-Infinity" maxWidth="-Infinity"
+                           minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0"
+                           promptText="Name" visible="false"/>
+                <TextField fx:id="studentNumberField" maxHeight="-Infinity"
+                           maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0"
+                           prefWidth="370.0" promptText="Student Number" visible="false"/>
+                <TextField fx:id="emailField" maxHeight="-Infinity" maxWidth="-Infinity"
+                           minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0"
+                           promptText="Email"/>
+                <PasswordField fx:id="passwordField" maxHeight="-Infinity" maxWidth="-Infinity"
+                               minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0"
+                               promptText="Password"/>
+                <Button fx:id="loginButton" alignment="CENTER" mnemonicParsing="false"
+                        onAction="#handleLoginButtonAction" prefHeight="23.0" prefWidth="370.0" text="Login">
+                </Button>
+            </VBox>
+            <Button fx:id="registerButton" alignment="CENTER" mnemonicParsing="false"
+                    onAction="#handleRegisterButtonAction" prefHeight="23.0" prefWidth="370.0" text="New User">
+            </Button>
+        </VBox>
+        <VBox alignment="BOTTOM_CENTER" GridPane.rowIndex="2">
+            <Label fx:id="infoLabel" styleClass="errorLabel" visible="false"/>
+        </VBox>
+    </GridPane>
+</AnchorPane>

@@ -1,0 +1,9 @@
+pt\isec\eventmanager\Main.class
+pt\isec\eventmanager\events\Event.class
+module-info.class
+pt\isec\eventmanager\server\MainServer.class
+pt\isec\eventmanager\gui\LoginController.class
+pt\isec\eventmanager\events\PresenceRegistration.class
+pt\isec\eventmanager\gui\Login.class
+pt\isec\eventmanager\users\Client.class
+pt\isec\eventmanager\users\Administrator.class

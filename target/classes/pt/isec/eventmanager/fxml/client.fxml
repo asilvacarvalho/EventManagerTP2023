@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+<?import java.net.URL?>
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0"
+            prefWidth="1000.0" styleClass="startingPane" xmlns="http://javafx.com/javafx/18.0.2"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="pt.isec.eventmanager.client.ClientController">
+    <stylesheets>
+        <URL value="@../css/global.css"/>
+    </stylesheets>
+    <GridPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0"
+              prefWidth="1000.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+              AnchorPane.topAnchor="0.0">
+        <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints percentHeight="40.0" vgrow="SOMETIMES"/>
+            <RowConstraints percentHeight="40.0" vgrow="SOMETIMES"/>
+            <RowConstraints percentHeight="20" vgrow="SOMETIMES"/>
+        </rowConstraints>
+        <VBox alignment="CENTER" prefHeight="1000.0" prefWidth="1000.0">
+            <ImageView fitHeight="174.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
+                <Image url="@../images/eventmanager_logo.png"/>
+            </ImageView>
+        </VBox>
+        <VBox alignment="BOTTOM_CENTER" spacing="5.0" GridPane.rowIndex="1">
+            <Label text="Server Info" textFill="WHITE">
+                <font>
+                    <Font size="18.0"/>
+                </font>
+            </Label>
+            <TextField fx:id="serverAddressField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                       minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Server Address"/>
+            <TextField fx:id="serverPortField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                       minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Server Port"/>
+            <Button fx:id="connectServerButton" alignment="CENTER" mnemonicParsing="false"
+                    onAction="#handleConnectServerButtonAction" prefHeight="23.0" prefWidth="370.0" text="Connect"/>
+        </VBox>
+        <VBox alignment="BOTTOM_CENTER" GridPane.rowIndex="2">
+            <Label fx:id="errorLabel" styleClass="errorLabel" visible="false"/>
+        </VBox>
+    </GridPane>
+</AnchorPane>

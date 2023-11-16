@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.net.URL?>
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0"
+            prefWidth="1000.0" xmlns="http://javafx.com/javafx/18.0.2" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="pt.isec.eventmanager.client.ClientAuthenticatedController">
+    <stylesheets>
+        <URL value="@../css/global.css"/>
+    </stylesheets>
+
+    <top>
+        <VBox spacing="10" style="-fx-background-color: #00CDCD; -fx-padding: 10;">
+            <Label fx:id="welcomeLabel" style="-fx-text-fill: white; -fx-font-size: 18px;" text="Welcome "/>
+            <Button fx:id="logoutButton" onAction="#handleLogoutButtonAction" styleClass="errorButton" text="Logout"/>
+        </VBox>
+    </top>
+
+    <left>
+        <VBox fx:id="menuOptionsPane" alignment="TOP_CENTER" maxWidth="135.0" minWidth="135.0" prefWidth="135.0"
+              spacing="10" style="-fx-background-color: #E0E0E0; -fx-padding: 10;">
+            <Button fx:id="codeSubmitButton" style="-fx-pref-width: 150;" text="Code Submit"/>
+            <Button fx:id="attendancesButton" style="-fx-pref-width: 150;" text="Attendances"/>
+            <Button fx:id="editProfileButton" style="-fx-pref-width: 150;" text="Edit Profile"/>
+            <Button fx:id="createEventButton" onAction="#handlecreateEventButtonAction" style="-fx-pref-width: 150;"
+                    text="Create Event" visible="false"/>
+            <Button fx:id="listEventsButton" onAction="#handlelistEventButtonAction" style="-fx-pref-width: 150;"
+                    text="List Event" visible="false"/>
+            <Button fx:id="generateCodeButton" style="-fx-pref-width: 150;" text="Generate Code" visible="false"/>
+            <Button fx:id="checkAttendaceButton" style="-fx-pref-width: 150;" text="Check User Attendaces"
+                    visible="false"/>
+        </VBox>
+    </left>
+
+    <center>
+        <VBox fx:id="mainContentArea" alignment="TOP_CENTER" maxWidth="865.0" minWidth="865.0" prefWidth="865.0"
+              style="-fx-padding: 20;">
+            <BorderPane.margin>
+                <Insets/>
+            </BorderPane.margin>
+            <padding>
+                <Insets top="10.0"/>
+            </padding>
+        </VBox>
+    </center>
+    <bottom>
+        <VBox alignment="BOTTOM_CENTER" GridPane.rowIndex="2">
+            <Label fx:id="infoLabel" visible="false"/>
+        </VBox>
+    </bottom>
+</BorderPane>
