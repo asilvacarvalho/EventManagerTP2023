@@ -4,14 +4,14 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import java.net.URL?>
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="865.0"
-            styleClass="mainBorderPane" xmlns="http://javafx.com/javafx/18.0.2" xmlns:fx="http://javafx.com/fxml/1"
+<AnchorPane maxWidth="-Infinity" minWidth="-Infinity" prefWidth="800.0" styleClass="mainBorderPane"
+            xmlns="http://javafx.com/javafx/18.0.2" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="pt.isec.eventmanager.client.ListEventsController">
     <stylesheets>
         <URL value="@../css/global.css"/>
     </stylesheets>
-    <VBox alignment="TOP_CENTER" prefHeight="400.0" prefWidth="865.0" spacing="10.0" AnchorPane.bottomAnchor="0.0"
-          AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+    <VBox alignment="TOP_CENTER" spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <TableView fx:id="eventTableView">
             <columns>
                 <TableColumn maxWidth="100.0" prefWidth="72.5" text="ID">
@@ -44,7 +44,7 @@
                         <PropertyValueFactory property="endTime"/>
                     </cellValueFactory>
                 </TableColumn>
-                <TableColumn fx:id="optionsColumn" prefWidth="255.0" text="Options"/>
+                <TableColumn fx:id="optionsColumn" prefWidth="190.0" text="Options"/>
             </columns>
         </TableView>
     </VBox>

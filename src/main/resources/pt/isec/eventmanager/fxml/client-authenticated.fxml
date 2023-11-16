@@ -19,7 +19,7 @@
     </top>
 
     <left>
-        <VBox fx:id="menuOptionsPane" alignment="TOP_CENTER" maxWidth="135.0" minWidth="135.0" prefWidth="135.0"
+        <VBox fx:id="menuOptionsPane" alignment="TOP_CENTER" maxWidth="200.0" minWidth="200.0" prefWidth="200.0"
               spacing="10" style="-fx-background-color: #E0E0E0; -fx-padding: 10;">
             <Button fx:id="codeSubmitButton" style="-fx-pref-width: 150;" text="Code Submit"/>
             <Button fx:id="attendancesButton" style="-fx-pref-width: 150;" text="Attendances"/>
@@ -35,7 +35,7 @@
     </left>
 
     <center>
-        <VBox fx:id="mainContentArea" alignment="TOP_CENTER" maxWidth="865.0" minWidth="865.0" prefWidth="865.0"
+        <VBox fx:id="mainContentArea" alignment="TOP_CENTER" maxWidth="800.0" minWidth="800.0" prefWidth="800.0"
               style="-fx-padding: 20;">
             <BorderPane.margin>
                 <Insets/>

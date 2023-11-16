@@ -68,11 +68,34 @@
     -fx-background-color: #00CDCD;
 }
 
-.tableOptionsButton {
-    -fx-font-size: 6px;
+.tableActionButton {
     -fx-padding: 0px 0px;
-    -fx-border-radius: 0px;
-    -fx-background-radius: 0px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
 }
 
+.tableActionButton:hover {
+    -fx-background-color: white;
+    -fx-border-color: black; /* Cor da borda: preto */
+    -fx-border-width: 1px; /* Largura da borda: 1 pixel */
+    -fx-border-style: solid;
+}
+
+.tableActionButton:hover {
+    -fx-background-color: white;
+    -fx-border-color: black; /* Cor da borda: preto */
+    -fx-border-width: 1px; /* Largura da borda: 1 pixel */
+    -fx-border-style: solid;
+}
+
+.tableActionButton:pressed {
+    -fx-background-color: #009a9a;
+}
+
+.tableActionButton:focused {
+    -fx-background-color: white;
+    -fx-border-color: black; /* Cor da borda: preto */
+    -fx-border-width: 1px; /* Largura da borda: 1 pixel */
+    -fx-border-style: solid;
+}
 

@@ -23,7 +23,7 @@ public class EventListTableActionsController {
     private Event listItem;
 
     @FXML
-    public void initialize(){
+    public void initialize() {
         generateKeyButton.setTooltip(new Tooltip("Gerar Chave"));
         infoButton.setTooltip(new Tooltip("Informações"));
         editButton.setTooltip(new Tooltip("Editar"));
@@ -46,21 +46,18 @@ public class EventListTableActionsController {
 
     @FXML
     void handleEditAction(ActionEvent event) {
-        System.out.println("[ListAction] Edit");
         if (clientAuthenticatedController != null)
             clientAuthenticatedController.editEvent(listItem);
     }
 
     @FXML
     void handleGenerateKeyAction(ActionEvent event) {
-        System.out.println("[ListAction] Key");
         if (clientAuthenticatedController != null)
             clientAuthenticatedController.generateEventKey(listItem);
     }
 
     @FXML
     void handleInfoAction(ActionEvent event) {
-        System.out.println("[ListAction] Info");
         if (clientAuthenticatedController != null)
             clientAuthenticatedController.showEventAttendances(listItem);
     }
