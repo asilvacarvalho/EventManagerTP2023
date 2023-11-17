@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import java.net.URL?>
@@ -9,38 +10,48 @@
     <stylesheets>
         <URL value="@../css/global.css"/>
     </stylesheets>
-    <VBox alignment="TOP_CENTER" spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
-          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-
-        <GridPane alignment="CENTER" hgap="10" vgap="10">
-
-            <Label text="Name" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-            <TextField fx:id="nameField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-
-            <Label text="Local" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-            <TextField fx:id="locationField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-
-            <Label text="Date" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-            <DatePicker fx:id="datePicker" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-
-            <Label text="Start Time" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-            <TextField fx:id="startTimeField" promptText="HH:mm" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-
-            <Label text="End Time" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-            <TextField fx:id="endTimeField" promptText="HH:mm" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-            <columnConstraints>
-                <ColumnConstraints/>
-                <ColumnConstraints/>
-            </columnConstraints>
-            <rowConstraints>
-                <RowConstraints/>
-                <RowConstraints/>
-                <RowConstraints/>
-                <RowConstraints/>
-                <RowConstraints/>
-            </rowConstraints>
-        </GridPane>
-
-        <Button onAction="#handleAddEvent" style="-fx-pref-width: 100px;" text="Adicionar"/>
+    <VBox alignment="TOP_CENTER" prefHeight="319.2" prefWidth="800.0" spacing="15.0" AnchorPane.bottomAnchor="0.0"
+          AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <HBox alignment="CENTER">
+            <VBox spacing="5.0">
+                <Label text="Name"/>
+                <TextField fx:id="nameField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                           minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Name"/>
+            </VBox>
+        </HBox>
+        <HBox alignment="CENTER">
+            <VBox spacing="5.0">
+                <Label text="Local"/>
+                <TextField fx:id="locationField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                           minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Local"/>
+            </VBox>
+        </HBox>
+        <HBox alignment="CENTER">
+            <VBox spacing="5.0">
+                <Label text="Date"/>
+                <DatePicker fx:id="datePicker" editable="false" maxHeight="-Infinity" maxWidth="-Infinity"
+                            minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0"
+                            promptText="Date"/>
+            </VBox>
+        </HBox>
+        <HBox alignment="CENTER" spacing="30.0">
+            <VBox spacing="5.0">
+                <Label text="Start Time"/>
+                <TextField fx:id="startTimeField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                           minWidth="-Infinity" prefHeight="30.0" prefWidth="170.0" promptText="HH:mm"/>
+            </VBox>
+            <VBox spacing="5.0">
+                <Label text="End Time"/>
+                <TextField fx:id="endTimeField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                           minWidth="-Infinity" prefHeight="30.0" prefWidth="170.0" promptText="HH:mm"/>
+            </VBox>
+        </HBox>
+        <HBox alignment="CENTER">
+            <Button fx:id="addEventButton" alignment="CENTER" mnemonicParsing="false" onAction="#handleAddEvent"
+                    prefHeight="23.0" prefWidth="370.0" text="Save"/>
+        </HBox>
+        <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+        </padding>
     </VBox>
 </AnchorPane>
