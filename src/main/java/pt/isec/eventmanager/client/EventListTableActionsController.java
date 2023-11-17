@@ -1,6 +1,5 @@
 package pt.isec.eventmanager.client;
 
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
@@ -24,10 +23,10 @@ public class EventListTableActionsController {
 
     @FXML
     public void initialize() {
-        generateKeyButton.setTooltip(new Tooltip("Gerar Chave"));
-        infoButton.setTooltip(new Tooltip("Informações"));
-        editButton.setTooltip(new Tooltip("Editar"));
-        deleteButton.setTooltip(new Tooltip("Apagar"));
+        generateKeyButton.setTooltip(new Tooltip("Generate Key"));
+        infoButton.setTooltip(new Tooltip("Attendances"));
+        editButton.setTooltip(new Tooltip("Edit"));
+        deleteButton.setTooltip(new Tooltip("Delete"));
     }
 
     public void initListActionController(ClientAuthenticatedController controller) {
@@ -39,25 +38,25 @@ public class EventListTableActionsController {
     }
 
     @FXML
-    void handleDeleteAction(ActionEvent event) {
+    void handleDeleteAction() {
         if (clientAuthenticatedController != null)
             clientAuthenticatedController.deleteEvent(listItem);
     }
 
     @FXML
-    void handleEditAction(ActionEvent event) {
+    void handleEditAction() {
         if (clientAuthenticatedController != null)
             clientAuthenticatedController.editEvent(listItem);
     }
 
     @FXML
-    void handleGenerateKeyAction(ActionEvent event) {
+    void handleGenerateKeyAction() {
         if (clientAuthenticatedController != null)
             clientAuthenticatedController.generateEventKey(listItem);
     }
 
     @FXML
-    void handleInfoAction(ActionEvent event) {
+    void handleInfoAction() {
         if (clientAuthenticatedController != null)
             clientAuthenticatedController.showEventAttendances(listItem);
     }

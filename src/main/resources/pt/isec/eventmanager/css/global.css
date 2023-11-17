@@ -17,6 +17,7 @@
     -fx-font-size: 14px;
 }
 
+
 .button {
     -fx-background-color: white;
     -fx-text-fill: #00CDCD;
@@ -44,6 +45,7 @@
     -fx-background-color: #00b4b4;
 }
 
+
 .errorButton {
     -fx-background-color: white;
     -fx-text-fill: #f44336;
@@ -64,8 +66,17 @@
     -fx-background-color: #f44336;
 }
 
+
 .table-row-cell:selected {
     -fx-background-color: #00CDCD;
+}
+
+.table-row-centerLeft {
+    -fx-alignment: center-left;
+}
+
+.table-row-centered {
+    -fx-alignment: center;
 }
 
 .tableActionButton {
@@ -98,4 +109,3 @@
     -fx-border-width: 1px; /* Largura da borda: 1 pixel */
     -fx-border-style: solid;
 }
-
