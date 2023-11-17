@@ -53,6 +53,12 @@ public class ServerThread extends Thread {
                         case Constants.LISTEVENTS_REQUEST:
                             listEvents(oout, dbUrl);
                             break;
+                        case Constants.EDITEVENT_REQUEST:
+                            editEvent(oin, oout, dbUrl);
+                            break;
+                        case Constants.EVENTHASATTENDENCES_REQUEST:
+                            eventHasAttendences(oin, oout, dbUrl);
+                            break;
                         default:
                             System.out.println("[ServerThread] Unsupported Operation: " + operationType);
                             serverController.addToConsole("[ServerThread] Unsupported Operation: " + operationType);
@@ -133,6 +139,40 @@ public class ServerThread extends Thread {
             ArrayList<Event> listEvents = EventManagerDB.listEvents(conn, serverController);
 
             oout.writeObject(listEvents);
+            oout.flush();
+        } catch (SQLException e) {
+            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+        }
+    }
+
+    private void editEvent(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
+        Event newEvent = (Event) oin.readObject();
+
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+            System.out.println("[ServerThread] Connection Established to " + dbUrl);
+            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+
+            boolean editEventSuccess = EventManagerDB.editEvent(conn, newEvent, serverController);
+
+            oout.writeObject(editEventSuccess);
+            oout.flush();
+        } catch (SQLException e) {
+            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+        }
+    }
+
+    private void eventHasAttendences(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
+        int eventId = (int) oin.readObject();
+
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+            System.out.println("[ServerThread] Connection Established to " + dbUrl);
+            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+
+            boolean eventHasAttendences = EventManagerDB.eventHasAttendences(conn, eventId);
+
+            oout.writeObject(eventHasAttendences);
             oout.flush();
         } catch (SQLException e) {
             System.err.println("[ServerThread] Connection Error: " + e.getMessage());

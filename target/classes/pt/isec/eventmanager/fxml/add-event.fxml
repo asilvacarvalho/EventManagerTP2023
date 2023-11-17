@@ -47,7 +47,7 @@
             </VBox>
         </HBox>
         <HBox alignment="CENTER">
-            <Button fx:id="addEventButton" alignment="CENTER" mnemonicParsing="false" onAction="#handleAddEvent"
+            <Button fx:id="addEventButton" alignment="CENTER" mnemonicParsing="false" onAction="#handleSaveEvent"
                     prefHeight="23.0" prefWidth="370.0" text="Save"/>
         </HBox>
         <padding>

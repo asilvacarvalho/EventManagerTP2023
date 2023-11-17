@@ -208,4 +208,63 @@ public class EventManagerDB {
         return events;
     }
 
+    public static boolean editEvent(Connection conn, Event event, ServerController controller) {
+        String checkEventQuery = "SELECT * FROM evento WHERE id=?";
+        String updateEventQuery;
+
+        try (PreparedStatement checkEventStatement = conn.prepareStatement(checkEventQuery)) {
+            // Verifica se o evento com o ID fornecido existe na tabela evento
+            checkEventStatement.setInt(1, event.getId());
+            ResultSet eventResultSet = checkEventStatement.executeQuery();
+
+            if (!eventResultSet.next()) {
+                System.err.println("[EventManagerDB] Event with ID " + event.getId() + " not found.");
+                controller.addToConsole("[EventManagerDB] Event with ID " + event.getId() + " not found.");
+                return false;
+            }
+
+            updateEventQuery = "UPDATE evento SET name=?, location=?, start_date=?, end_date=? WHERE id=?";
+
+            try (PreparedStatement updateEventStatement = conn.prepareStatement(updateEventQuery)) {
+                updateEventStatement.setString(1, event.getName());
+                updateEventStatement.setString(2, event.getLocation());
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                String formattedDate = dateFormat.format(event.getDate());
+
+                String startDateString = formattedDate + " " + event.getStartTime() + ":00";
+                String endDateString = formattedDate + " " + event.getEndTime() + ":00";
+
+                updateEventStatement.setString(3, startDateString);
+                updateEventStatement.setString(4, endDateString);
+                updateEventStatement.setInt(5, event.getId());
+
+                int rowsAffected = updateEventStatement.executeUpdate();
+
+                if (rowsAffected > 0) {
+                    System.out.println("[EventManagerDB] Event updated successfully.");
+                    controller.addToConsole("[EventManagerDB] Event updated successfully.");
+                    return true;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[EventManagerDB] Error editing event: " + e.getMessage());
+            controller.addToConsole("[EventManagerDB] Error editing event: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public static boolean eventHasAttendences(Connection conn, int eventId) {
+        String checkEventUserQuery = "SELECT * FROM evento_utilizador WHERE evento_id=?";
+
+        try (PreparedStatement checkEventUserStatement = conn.prepareStatement(checkEventUserQuery)) {
+            checkEventUserStatement.setInt(1, eventId);
+            ResultSet eventUserResultSet = checkEventUserStatement.executeQuery();
+
+            return eventUserResultSet.next();
+        } catch (SQLException e) {
+            System.err.println("[EventManagerDB] Error checking event-user association: " + e.getMessage());
+        }
+        return false;
+    }
 }
+
