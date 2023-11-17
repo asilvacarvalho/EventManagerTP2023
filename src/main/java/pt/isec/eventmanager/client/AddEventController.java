@@ -26,8 +26,9 @@ public class AddEventController {
     private TextField endTimeField;
 
     private ClientAuthenticatedController parentController;
-
     private Client client;
+
+    private Event eventEdit;
 
     @FXML
     public void initialize() {
@@ -46,8 +47,30 @@ public class AddEventController {
         this.parentController = controller;
     }
 
+    public void initEditEventController(Client client, ClientAuthenticatedController controller, Event event) {
+        this.eventEdit = event;
+        this.client = client;
+        this.parentController = controller;
+
+        nameField.setText(eventEdit.getName());
+        locationField.setText(eventEdit.getLocation());
+        startTimeField.setText(eventEdit.getStartTime());
+        endTimeField.setText(eventEdit.getEndTime());
+
+        Date date = eventEdit.getDate();
+        Instant instant = date.toInstant();
+        LocalDate localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        datePicker.setValue(localDate);
+
+        if (client.checkEventUserAssociation(eventEdit.getId())) {
+            startTimeField.setDisable(true);
+            endTimeField.setDisable(true);
+            datePicker.setDisable(true);
+        }
+    }
+
     @FXML
-    private void handleAddEvent() {
+    private void handleSaveEvent() {
         if (nameField.getText().isEmpty()
                 || locationField.getText().isEmpty()
                 || datePicker.getValue() == null
@@ -82,11 +105,25 @@ public class AddEventController {
         String eventStartTime = startTimeField.getText();
         String eventEndTime = endTimeField.getText();
 
-        if (client.addEvent(new Event(eventName, eventLocation, eventDate, eventStartTime, eventEndTime))) {
-            parentController.showInfo("Event added successfully", LabelType.INFO);
+        boolean success;
+
+        if (eventEdit != null) {
+            eventEdit.setName(eventName);
+            eventEdit.setLocation(eventLocation);
+            eventEdit.setDate(eventDate);
+            eventEdit.setStartTime(eventStartTime);
+            eventEdit.setEndTime(eventEndTime);
+            success = client.editEvent(eventEdit);
         } else {
-            parentController.showInfo("Error adding event!", LabelType.ERROR);
+            success = client.addEvent(new Event(eventName, eventLocation, eventDate, eventStartTime, eventEndTime));
         }
+
+        if (success) {
+            parentController.showInfo("Operation successfully", LabelType.INFO);
+        } else {
+            parentController.showInfo("Operation Error!", LabelType.ERROR);
+        }
+
         clearForm();
     }
 
@@ -96,5 +133,6 @@ public class AddEventController {
         datePicker.setValue(null);
         startTimeField.setText("");
         endTimeField.setText("");
+        eventEdit = null;
     }
 }

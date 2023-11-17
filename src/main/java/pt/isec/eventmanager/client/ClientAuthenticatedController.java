@@ -146,6 +146,22 @@ public class ClientAuthenticatedController {
 
     public void editEvent(Event event) {
         System.out.println("[ClientAuthenticationController] Edit Event " + event.getId());
+        try {
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/add-event.fxml"));
+
+            Pane addEventPane = loader.load();
+
+            mainContentArea.getChildren().clear();
+            mainContentArea.getChildren().add(addEventPane);
+
+            Platform.runLater(() -> {
+                AddEventController addEventController = loader.getController();
+                addEventController.initEditEventController(client, this, event);
+            });
+
+        } catch (IOException e) {
+            System.out.println("[ClienteController] Error loading AddEventFXML");
+        }
     }
 
     public void deleteEvent(Event event) {

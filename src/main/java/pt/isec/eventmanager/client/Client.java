@@ -126,7 +126,6 @@ public class Client {
             oout.flush();
 
             try {
-                // Receber resposta do servidor
                 boolean registrationSuccess = (boolean) oin.readObject();
 
                 if (registrationSuccess) {
@@ -165,5 +164,75 @@ public class Client {
             System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
         }
         return null;
+    }
+
+    public boolean editEvent(Event event) {
+        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
+             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
+             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+
+            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+
+            // Enviar o tipo de operação
+            oout.writeObject(Constants.EDITEVENT_REQUEST);
+            oout.flush();
+
+            oout.writeObject(event);
+            oout.flush();
+
+            try {
+                boolean editSuccess = (boolean) oin.readObject();
+
+                if (editSuccess) {
+                    return true;
+                }
+            } catch (SocketTimeoutException e) {
+                System.out.println("[Client] Socket timeout");
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+        }
+        return false;
+    }
+
+    public void deleteEvent(Event event) {
+
+    }
+
+    public void generateKeyEvent(Event event) {
+
+    }
+
+    public boolean checkEventUserAssociation(int eventId) {
+        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
+             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
+             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+
+            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+
+            // Enviar o tipo de operação
+            oout.writeObject(Constants.EVENTHASATTENDENCES_REQUEST);
+            oout.flush();
+
+            oout.writeObject(eventId);
+            oout.flush();
+
+            try {
+                boolean eventHasAttendences = (boolean) oin.readObject();
+
+                if (eventHasAttendences) {
+                    return true;
+                }
+            } catch (SocketTimeoutException e) {
+                System.out.println("[Client] Socket timeout");
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+        }
+        return false;
     }
 }
