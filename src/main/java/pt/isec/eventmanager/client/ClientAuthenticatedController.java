@@ -31,11 +31,7 @@ public class ClientAuthenticatedController {
     @FXML
     private Button editProfileButton;
     @FXML
-    private Button generateCodeButton;
-    @FXML
     private Button listEventsButton;
-    @FXML
-    private Button logoutButton;
     @FXML
     private VBox menuOptionsPane;
     @FXML
@@ -47,6 +43,8 @@ public class ClientAuthenticatedController {
 
     private Stage mainStage;
     private Client client;
+
+    private PauseTransition infoPauseTransition;
 
     @FXML
     public void initialize() {
@@ -69,12 +67,47 @@ public class ClientAuthenticatedController {
         menuOptionsPane.getChildren().remove(editProfileButton);
         createEventButton.setVisible(true);
         listEventsButton.setVisible(true);
-        generateCodeButton.setVisible(true);
         checkAttendaceButton.setVisible(true);
     }
 
     @FXML
     private void handleLogoutButtonAction() {
+        logout();
+    }
+
+    @FXML
+    public void handleCodeSubmitButtonAction() {
+        insertUserKey();
+    }
+
+    @FXML
+    private void handlecreateEventButtonAction() {
+        createEvent();
+    }
+
+    @FXML
+    private void handlelistEventButtonAction() {
+        initTableViewContent();
+    }
+
+    public void clearMainContentArea() {
+        mainContentArea.getChildren().clear();
+    }
+
+    public void showInfo(String msg, LabelType type) {
+        if (infoPauseTransition != null)
+            infoPauseTransition.stop();
+
+        infoLabel.setStyle(Utils.getLabelStyle(type));
+        infoLabel.setText(msg);
+        infoLabel.setVisible(true);
+
+        infoPauseTransition = new PauseTransition(Duration.seconds(8));
+        infoPauseTransition.setOnFinished(event -> infoLabel.setVisible(false));
+        infoPauseTransition.play();
+    }
+
+    private void logout() {
         System.out.println("[ClientAuthenticatedController] Loggin out");
         try {
             FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/client-login.fxml"));
@@ -92,28 +125,7 @@ public class ClientAuthenticatedController {
         }
     }
 
-    @FXML
-    private void handlecreateEventButtonAction() {
-        try {
-            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/add-event.fxml"));
-
-            Pane addEventPane = loader.load();
-
-            mainContentArea.getChildren().clear();
-            mainContentArea.getChildren().add(addEventPane);
-
-            Platform.runLater(() -> {
-                AddEventController addEventController = loader.getController();
-                addEventController.initAddEventController(client, this);
-            });
-
-        } catch (IOException e) {
-            System.out.println("[ClienteController] Error loading AddEventFXML");
-        }
-    }
-
-    @FXML
-    private void handlelistEventButtonAction() {
+    public void initTableViewContent() {
         try {
             FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/list-events.fxml"));
 
@@ -134,18 +146,26 @@ public class ClientAuthenticatedController {
         }
     }
 
-    public void showInfo(String msg, LabelType type) {
-        infoLabel.setStyle(Utils.getLabelStyle(type));
-        infoLabel.setText(msg);
-        infoLabel.setVisible(true);
+    private void createEvent() {
+        try {
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/add-event.fxml"));
 
-        PauseTransition visiblePause = new PauseTransition(Duration.seconds(3));
-        visiblePause.setOnFinished(event -> infoLabel.setVisible(false));
-        visiblePause.play();
+            Pane addEventPane = loader.load();
+
+            mainContentArea.getChildren().clear();
+            mainContentArea.getChildren().add(addEventPane);
+
+            Platform.runLater(() -> {
+                AddEventController addEventController = loader.getController();
+                addEventController.initAddEventController(client, this);
+            });
+
+        } catch (IOException e) {
+            System.out.println("[ClienteController] Error loading AddEventFXML");
+        }
     }
 
     public void editEvent(Event event) {
-        System.out.println("[ClientAuthenticationController] Edit Event " + event.getId());
         try {
             FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/add-event.fxml"));
 
@@ -173,6 +193,44 @@ public class ClientAuthenticatedController {
     }
 
     public void generateEventKey(Event event) {
-        System.out.println("[ClientAuthenticationController] Generate Key for Event " + event.getId());
+        if (event.isEventInProgress()) {
+            try {
+                FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/event-key.fxml"));
+
+                Pane generateKeyPane = loader.load();
+
+                mainContentArea.getChildren().clear();
+                mainContentArea.getChildren().add(generateKeyPane);
+
+                Platform.runLater(() -> {
+                    EventKeyController eventKeyController = loader.getController();
+                    eventKeyController.initEventKeyController(client, this, event);
+                });
+
+            } catch (IOException e) {
+                System.out.println("[ClienteController] Error loading AddEventFXML");
+            }
+        } else {
+            showInfo("Only active events can generate keys!", LabelType.ERROR);
+        }
+    }
+
+    private void insertUserKey() {
+        try {
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/user-key.fxml"));
+
+            Pane insertUserKeyPane = loader.load();
+
+            mainContentArea.getChildren().clear();
+            mainContentArea.getChildren().add(insertUserKeyPane);
+
+            Platform.runLater(() -> {
+                UserKeyController userKeyController = loader.getController();
+                userKeyController.initUserKeyController(client, this);
+            });
+
+        } catch (IOException e) {
+            System.out.println("[ClienteController] Error loading AddEventFXML");
+        }
     }
 }
