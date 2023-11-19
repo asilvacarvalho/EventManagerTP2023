@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+<?import java.net.URL?>
+<AnchorPane maxWidth="800.0" minWidth="800.0" prefWidth="800.0" styleClass="mainBorderPane"
+            xmlns="http://javafx.com/javafx/18.0.2" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="pt.isec.eventmanager.client.EventKeyController">
+    <stylesheets>
+        <URL value="@../css/global.css"/>
+    </stylesheets>
+    <VBox fx:id="eventKeyMainBox" alignment="TOP_CENTER" prefWidth="800.0" spacing="70.0" AnchorPane.bottomAnchor="0.0"
+          AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <VBox fx:id="currentKeyBox" alignment="TOP_CENTER" spacing="15.0">
+            <Label text="Current Event Key">
+                <font>
+                    <Font size="18.0"/>
+                </font>
+            </Label>
+            <HBox alignment="CENTER" spacing="10.0">
+                <VBox spacing="5.0">
+                    <Label text="Duration"/>
+                    <TextField fx:id="currentDurationField" editable="false" focusTraversable="false"
+                               maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+                               prefHeight="30.0" prefWidth="200.0"/>
+                </VBox>
+                <VBox spacing="5.0">
+                    <Label text="EventKey"/>
+                    <TextField fx:id="currentCodeField" editable="false" focusTraversable="false"
+                               maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+                               prefHeight="30.0" prefWidth="200.0"/>
+                </VBox>
+            </HBox>
+        </VBox>
+        <VBox fx:id="generateKeyBox" alignment="TOP_CENTER" spacing="15.0">
+            <Label text="Generate New Key">
+                <font>
+                    <Font size="18.0"/>
+                </font>
+            </Label>
+            <HBox alignment="CENTER">
+                <VBox spacing="5.0">
+                    <Label text="Duration"/>
+                    <TextField fx:id="durationField" maxHeight="-Infinity" maxWidth="-Infinity"
+                               minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0"
+                               promptText="Duration in minutes"/>
+                </VBox>
+            </HBox>
+            <HBox alignment="CENTER">
+                <Button alignment="CENTER" mnemonicParsing="false" onAction="#handleSaveEvent" prefHeight="23.0"
+                        prefWidth="370.0" text="Save"/>
+            </HBox>
+        </VBox>
+        <VBox fx:id="newEventKeyBox" alignment="BOTTOM_CENTER" spacing="15.0" visible="false">
+            <Label text="New Event Key">
+                <font>
+                    <Font size="18.0"/>
+                </font>
+            </Label>
+            <TextField fx:id="newEventKeyTextField" editable="false" maxHeight="-Infinity" maxWidth="-Infinity"
+                       minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0"/>
+        </VBox>
+        <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+        </padding>
+    </VBox>
+</AnchorPane>

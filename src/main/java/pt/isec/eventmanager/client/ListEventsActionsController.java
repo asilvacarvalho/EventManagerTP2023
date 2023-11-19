@@ -5,7 +5,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
 import pt.isec.eventmanager.events.Event;
 
-public class EventListTableActionsController {
+public class ListEventsActionsController {
     @FXML
     private Button generateKeyButton;
 
@@ -39,25 +39,25 @@ public class EventListTableActionsController {
 
     @FXML
     void handleDeleteAction() {
-        if (clientAuthenticatedController != null)
+        if (clientAuthenticatedController != null && listItem != null)
             clientAuthenticatedController.deleteEvent(listItem);
     }
 
     @FXML
     void handleEditAction() {
-        if (clientAuthenticatedController != null)
+        if (clientAuthenticatedController != null && listItem != null)
             clientAuthenticatedController.editEvent(listItem);
     }
 
     @FXML
     void handleGenerateKeyAction() {
-        if (clientAuthenticatedController != null)
+        if (clientAuthenticatedController != null && listItem != null)
             clientAuthenticatedController.generateEventKey(listItem);
     }
 
     @FXML
     void handleInfoAction() {
-        if (clientAuthenticatedController != null)
+        if (clientAuthenticatedController != null && listItem != null)
             clientAuthenticatedController.showEventAttendances(listItem);
     }
 }

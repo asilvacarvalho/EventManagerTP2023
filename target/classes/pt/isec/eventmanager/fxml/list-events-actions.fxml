@@ -6,7 +6,7 @@
 <?import java.net.URL?>
 <AnchorPane maxWidth="-Infinity" minWidth="-Infinity" prefWidth="120.0" xmlns="http://javafx.com/javafx/18.0.2"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="pt.isec.eventmanager.client.EventListTableActionsController">
+            fx:controller="pt.isec.eventmanager.client.ListEventsActionsController">
     <stylesheets>
         <URL value="@../css/global.css"/>
     </stylesheets>
