@@ -48,8 +48,10 @@ public class Server {
                 serverController.addToConsole("[Server] Connection Established to " + dbUrl);
 
                 // Criação de tabelas e admin
-                EventManagerDB.createTables(conn);
-                EventManagerDB.createAdmin(conn);
+                EventManagerDB.createTables(conn, serverController);
+                EventManagerDB.createAdmin(conn, serverController);
+                //TODO: remover no fim dos testes
+                EventManagerDB.createDummyData(conn, serverController);
 
             } catch (SQLException e) {
                 System.err.println("[Server] Connection Error: " + e.getMessage());
@@ -57,7 +59,6 @@ public class Server {
             }
         }
     }
-
 
     private void initTcpServer() {
         try (ServerSocket socket = new ServerSocket(Integer.parseInt(clientTcpPort))) {

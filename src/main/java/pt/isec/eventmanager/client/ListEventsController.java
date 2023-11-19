@@ -53,14 +53,14 @@ public class ListEventsController {
             @Override
             public TableCell<Event, String> call(final TableColumn<Event, String> param) {
                 return new TableCell<>() {
-                    private EventListTableActionsController listEventsController;
+                    private ListEventsActionsController listEventsController;
 
                     @Override
                     public void updateItem(String item, boolean empty) {
                         super.updateItem(item, empty);
 
                         try {
-                            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/event-list-table-actions.fxml"));
+                            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/list-events-actions.fxml"));
                             AnchorPane listActions = loader.load();
 
                             Platform.runLater(() -> {

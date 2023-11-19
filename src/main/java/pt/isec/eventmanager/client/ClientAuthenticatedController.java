@@ -12,6 +12,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import pt.isec.eventmanager.MainClient;
+import pt.isec.eventmanager.events.Attendance;
 import pt.isec.eventmanager.events.Event;
 import pt.isec.eventmanager.util.LabelType;
 import pt.isec.eventmanager.util.Utils;
@@ -21,17 +22,20 @@ import java.util.ArrayList;
 
 public class ClientAuthenticatedController {
     @FXML
+    private Button codeSubmitButton;
+    @FXML
     private Button attendancesButton;
     @FXML
-    private Button checkAttendaceButton;
+    private Button editProfileButton;
+
     @FXML
-    private Button codeSubmitButton;
+    private Button listEventsButton;
     @FXML
     private Button createEventButton;
     @FXML
-    private Button editProfileButton;
-    @FXML
-    private Button listEventsButton;
+    private Button checkAttendaceButton;
+
+
     @FXML
     private VBox menuOptionsPane;
     @FXML
@@ -50,6 +54,40 @@ public class ClientAuthenticatedController {
     public void initialize() {
     }
 
+    @FXML
+    private void handleLogoutButtonAction() {
+        logout();
+    }
+
+    @FXML
+    public void handleCodeSubmitButtonAction() {
+        insertUserKey();
+    }
+
+    @FXML
+    public void handleattendancesButtonButtonAction() {
+    }
+
+    @FXML
+    public void handleeditProfileButtonButtonAction() {
+    }
+
+    @FXML
+    private void handlelistEventButtonAction() {
+        initListEvents();
+    }
+
+    @FXML
+    private void handlecreateEventButtonAction() {
+        createEvent();
+    }
+
+    @FXML
+    public void handlecheckUserAttendaceButtonAction() {
+    }
+
+
+    //PANE
     public void initClientAutheController(Stage stage, Client client) {
         this.mainStage = stage;
         this.client = client;
@@ -70,26 +108,6 @@ public class ClientAuthenticatedController {
         checkAttendaceButton.setVisible(true);
     }
 
-    @FXML
-    private void handleLogoutButtonAction() {
-        logout();
-    }
-
-    @FXML
-    public void handleCodeSubmitButtonAction() {
-        insertUserKey();
-    }
-
-    @FXML
-    private void handlecreateEventButtonAction() {
-        createEvent();
-    }
-
-    @FXML
-    private void handlelistEventButtonAction() {
-        initTableViewContent();
-    }
-
     public void clearMainContentArea() {
         mainContentArea.getChildren().clear();
     }
@@ -107,6 +125,8 @@ public class ClientAuthenticatedController {
         infoPauseTransition.play();
     }
 
+
+    //USER
     private void logout() {
         System.out.println("[ClientAuthenticatedController] Loggin out");
         try {
@@ -125,7 +145,28 @@ public class ClientAuthenticatedController {
         }
     }
 
-    public void initTableViewContent() {
+    private void insertUserKey() {
+        try {
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/client-user-key.fxml"));
+
+            Pane insertUserKeyPane = loader.load();
+
+            mainContentArea.getChildren().clear();
+            mainContentArea.getChildren().add(insertUserKeyPane);
+
+            Platform.runLater(() -> {
+                UserKeyController userKeyController = loader.getController();
+                userKeyController.initUserKeyController(client, this);
+            });
+
+        } catch (IOException e) {
+            System.out.println("[ClienteController] Error loading AddEventFXML");
+        }
+    }
+
+
+    //EVENTS
+    public void initListEvents() {
         try {
             FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/list-events.fxml"));
 
@@ -148,7 +189,7 @@ public class ClientAuthenticatedController {
 
     private void createEvent() {
         try {
-            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/add-event.fxml"));
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/client-add-event.fxml"));
 
             Pane addEventPane = loader.load();
 
@@ -167,7 +208,7 @@ public class ClientAuthenticatedController {
 
     public void editEvent(Event event) {
         try {
-            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/add-event.fxml"));
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/client-add-event.fxml"));
 
             Pane addEventPane = loader.load();
 
@@ -185,17 +226,40 @@ public class ClientAuthenticatedController {
     }
 
     public void deleteEvent(Event event) {
-        System.out.println("[ClientAuthenticationController] Delete Event " + event.getId());
+        boolean success = client.deleteEvent(event);
+
+        if (success) {
+            showInfo("Operation successfully", LabelType.INFO);
+        } else {
+            showInfo("Operation Error!", LabelType.ERROR);
+        }
     }
 
     public void showEventAttendances(Event event) {
-        System.out.println("[ClientAuthenticationController] Show Attendances from Event " + event.getId());
+        try {
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/list-attendances.fxml"));
+
+            Pane listAttendancesPane = loader.load();
+
+            mainContentArea.getChildren().clear();
+            mainContentArea.getChildren().add(listAttendancesPane);
+
+            ArrayList<Attendance> listAttendances = client.listAttendences(event.getId());
+
+            Platform.runLater(() -> {
+                ListAttendancesController listAttendancesController = loader.getController();
+                listAttendancesController.initListAttendancesController(listAttendances, this, event);
+            });
+
+        } catch (IOException e) {
+            System.out.println("[ClienteController] Error loading ListEventaFXML");
+        }
     }
 
     public void generateEventKey(Event event) {
         if (event.isEventInProgress()) {
             try {
-                FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/event-key.fxml"));
+                FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/client-event-key.fxml"));
 
                 Pane generateKeyPane = loader.load();
 
@@ -215,22 +279,25 @@ public class ClientAuthenticatedController {
         }
     }
 
-    private void insertUserKey() {
-        try {
-            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/user-key.fxml"));
+    public void addEventAttendance(int eventId, String username) {
+        Attendance attendance = new Attendance(eventId, username);
 
-            Pane insertUserKeyPane = loader.load();
+        boolean success = client.addAttendance(attendance);
 
-            mainContentArea.getChildren().clear();
-            mainContentArea.getChildren().add(insertUserKeyPane);
+        if (success) {
+            showInfo("Operation successfully", LabelType.INFO);
+        } else {
+            showInfo("Operation Error!", LabelType.ERROR);
+        }
+    }
 
-            Platform.runLater(() -> {
-                UserKeyController userKeyController = loader.getController();
-                userKeyController.initUserKeyController(client, this);
-            });
+    public void deleteEventAttendance(Attendance registration) {
+        boolean success = client.deleteAttendance(registration);
 
-        } catch (IOException e) {
-            System.out.println("[ClienteController] Error loading AddEventFXML");
+        if (success) {
+            showInfo("Operation successfully", LabelType.INFO);
+        } else {
+            showInfo("Operation Error!", LabelType.ERROR);
         }
     }
 }

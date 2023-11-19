@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class EventoModel {
-    public static Event getEvent(Connection conn, int eventId) {
+    public static Event getEvent(Connection conn, int eventId, ServerController controller) {
         String query = "SELECT * FROM evento WHERE id=?";
         try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
             preparedStatement.setInt(1, eventId);
@@ -37,7 +37,8 @@ public class EventoModel {
                 return event;
             }
         } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error getting User: " + e.getMessage());
+            System.err.println("[EventManagerDB] Error getting Event: " + e.getMessage());
+            controller.addToConsole("[EventManagerDB] Error getting Event: " + e.getMessage());
         }
         return null;
     }
@@ -72,21 +73,26 @@ public class EventoModel {
     }
 
     public static boolean deleteEvent(Connection conn, Event event, ServerController controller) {
-        String deleteEventQuery = "DELETE FROM evento WHERE id=?";
+        int eventId = event.getId();
+        if (!eventHasAttendences(conn, eventId, controller)) {
+            String deleteEventQuery = "DELETE FROM evento WHERE id=?";
+            try (PreparedStatement preparedStatement = conn.prepareStatement(deleteEventQuery)) {
+                preparedStatement.setInt(1, eventId);
 
-        try (PreparedStatement preparedStatement = conn.prepareStatement(deleteEventQuery)) {
-            preparedStatement.setInt(1, event.getId());
+                int rowsAffected = preparedStatement.executeUpdate();
 
-            int rowsAffected = preparedStatement.executeUpdate();
-
-            if (rowsAffected > 0) {
-                System.out.println("[EventManagerDB] Event deleted successfully.");
-                controller.addToConsole("[EventManagerDB] Event deleted successfully.");
-                return true;
+                if (rowsAffected > 0) {
+                    System.out.println("[EventManagerDB] Event deleted successfully.");
+                    controller.addToConsole("[EventManagerDB] Event deleted successfully.");
+                    return true;
+                }
+            } catch (SQLException e) {
+                System.err.println("[EventManagerDB] Error deleting event: " + e.getMessage());
+                controller.addToConsole("[EventManagerDB] Error deleting event: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error deleting event: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error deleting event: " + e.getMessage());
+        } else {
+            System.err.println("[EventManagerDB] Event cannot be deleted because it has attendees.");
+            controller.addToConsole("[EventManagerDB] Event cannot be deleted because it has attendees.");
         }
         return false;
     }
@@ -168,7 +174,7 @@ public class EventoModel {
         return events;
     }
 
-    public static boolean eventHasAttendences(Connection conn, int eventId) {
+    public static boolean eventHasAttendences(Connection conn, int eventId, ServerController controller) {
         String checkEventUserQuery = "SELECT * FROM evento_utilizador WHERE evento_id=?";
 
         try (PreparedStatement checkEventUserStatement = conn.prepareStatement(checkEventUserQuery)) {
@@ -178,6 +184,7 @@ public class EventoModel {
             return eventUserResultSet.next();
         } catch (SQLException e) {
             System.err.println("[EventManagerDB] Error checking event-user association: " + e.getMessage());
+            controller.addToConsole("[EventManagerDB] Error checking event-user association: " + e.getMessage());
         }
         return false;
     }
