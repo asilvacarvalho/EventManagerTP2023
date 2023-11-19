@@ -14,21 +14,23 @@
     <top>
         <VBox spacing="10" style="-fx-background-color: #00CDCD; -fx-padding: 10;">
             <Label fx:id="welcomeLabel" style="-fx-text-fill: white; -fx-font-size: 18px;" text="Welcome "/>
-            <Button fx:id="logoutButton" onAction="#handleLogoutButtonAction" styleClass="errorButton" text="Logout"/>
+            <Button focusTraversable="false" onAction="#handleLogoutButtonAction" styleClass="errorButton"
+                    text="Logout"/>
         </VBox>
     </top>
 
     <left>
         <VBox fx:id="menuOptionsPane" alignment="TOP_CENTER" maxWidth="200.0" minWidth="200.0" prefWidth="200.0"
               spacing="10" style="-fx-background-color: #E0E0E0; -fx-padding: 10;">
-            <Button fx:id="codeSubmitButton" style="-fx-pref-width: 150;" text="Code Submit"/>
+            <Button fx:id="codeSubmitButton" onAction="#handleCodeSubmitButtonAction" style="-fx-pref-width: 150;"
+                    text="Code Submit"/>
             <Button fx:id="attendancesButton" style="-fx-pref-width: 150;" text="Attendances"/>
             <Button fx:id="editProfileButton" style="-fx-pref-width: 150;" text="Edit Profile"/>
-            <Button fx:id="createEventButton" onAction="#handlecreateEventButtonAction" style="-fx-pref-width: 150;"
-                    text="Create Event" visible="false"/>
+
             <Button fx:id="listEventsButton" onAction="#handlelistEventButtonAction" style="-fx-pref-width: 150;"
                     text="List Event" visible="false"/>
-            <Button fx:id="generateCodeButton" style="-fx-pref-width: 150;" text="Generate Code" visible="false"/>
+            <Button fx:id="createEventButton" onAction="#handlecreateEventButtonAction" style="-fx-pref-width: 150;"
+                    text="Create Event" visible="false"/>
             <Button fx:id="checkAttendaceButton" style="-fx-pref-width: 150;" text="Check User Attendaces"
                     visible="false"/>
         </VBox>
@@ -47,7 +49,11 @@
     </center>
     <bottom>
         <VBox alignment="BOTTOM_CENTER" GridPane.rowIndex="2">
-            <Label fx:id="infoLabel" visible="false"/>
+            <Label fx:id="infoLabel" visible="false">
+                <padding>
+                    <Insets bottom="10.0" top="10.0" left="10.0" right="10.0"/>
+                </padding>
+            </Label>
         </VBox>
     </bottom>
 </BorderPane>

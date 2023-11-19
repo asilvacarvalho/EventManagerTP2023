@@ -62,7 +62,7 @@ public class AddEventController {
         LocalDate localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
         datePicker.setValue(localDate);
 
-        if (client.checkEventUserAssociation(eventEdit.getId())) {
+        if (client.checkEventHasAttendences(eventEdit.getId())) {
             startTimeField.setDisable(true);
             endTimeField.setDisable(true);
             datePicker.setDisable(true);

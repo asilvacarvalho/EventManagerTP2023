@@ -9,14 +9,14 @@
 
 .mainBorderPane .label {
     -fx-text-fill: #00CDCD;
+    -fx-font-size: 18px;
 }
 
 .errorLabel {
     -fx-text-fill: red;
     -fx-background-color: white;
-    -fx-font-size: 14px;
+    -fx-font-size: 18px;
 }
-
 
 .button {
     -fx-background-color: white;
@@ -66,6 +66,9 @@
     -fx-background-color: #f44336;
 }
 
+.table-view .label {
+    -fx-font-size: 12px;
+}
 
 .table-row-cell:selected {
     -fx-background-color: #00CDCD;
