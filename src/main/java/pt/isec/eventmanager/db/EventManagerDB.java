@@ -166,12 +166,16 @@ public class EventManagerDB {
         return UtilizadorModel.authenticateUser(conn, user, controller);
     }
 
+    public static User getUser(Connection conn, String username, ServerController controller) {
+        return UtilizadorModel.getUser(conn, username, controller);
+    }
+
     public static boolean insertUser(Connection conn, User user, ServerController controller) {
         return UtilizadorModel.insertUser(conn, user, controller);
     }
 
-    public static User getUser(Connection conn, String username, ServerController controller) {
-        return UtilizadorModel.getUser(conn, username, controller);
+    public static boolean editUser(Connection conn, User user, ServerController controller) {
+        return UtilizadorModel.editUser(conn, user, controller);
     }
 
     public static ArrayList<Event> listUserEvents(Connection conn, String username, ServerController controller) {

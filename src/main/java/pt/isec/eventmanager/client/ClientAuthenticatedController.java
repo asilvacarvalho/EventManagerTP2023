@@ -5,8 +5,11 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -27,15 +30,12 @@ public class ClientAuthenticatedController {
     private Button attendancesButton;
     @FXML
     private Button editProfileButton;
-
     @FXML
     private Button listEventsButton;
     @FXML
     private Button createEventButton;
     @FXML
     private Button checkAttendaceButton;
-
-
     @FXML
     private VBox menuOptionsPane;
     @FXML
@@ -48,10 +48,12 @@ public class ClientAuthenticatedController {
     private Stage mainStage;
     private Client client;
 
+    private AnchorPane loadingPane;
     private PauseTransition infoPauseTransition;
 
     @FXML
     public void initialize() {
+        this.loadingPane = loadingPane();
     }
 
     @FXML
@@ -71,6 +73,7 @@ public class ClientAuthenticatedController {
 
     @FXML
     public void handleEditProfileButtonAction() {
+        editUSer();
     }
 
     @FXML
@@ -96,7 +99,7 @@ public class ClientAuthenticatedController {
         initLayout();
     }
 
-    private void initLayout() {
+    public void initLayout() {
         welcomeLabel.setText("Welcome " + client.getUser().getName());
         if (client.getUser().isAdmin()) initAdmin();
     }
@@ -127,6 +130,11 @@ public class ClientAuthenticatedController {
         infoPauseTransition.play();
     }
 
+    public void showLoading() {
+        mainContentArea.getChildren().clear();
+        mainContentArea.getChildren().add(loadingPane);
+    }
+
 
     //USER
     private void logout() {
@@ -144,6 +152,25 @@ public class ClientAuthenticatedController {
             });
         } catch (IOException e) {
             System.out.println("[ClienteController] Error loading ClientAuthenticatedFXML");
+        }
+    }
+
+    private void editUSer() {
+        try {
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/client-edit-user.fxml"));
+
+            Pane editUserPane = loader.load();
+
+            mainContentArea.getChildren().clear();
+            mainContentArea.getChildren().add(editUserPane);
+
+            Platform.runLater(() -> {
+                EditUserController editUserController = loader.getController();
+                editUserController.initEditUserController(client, this);
+            });
+
+        } catch (IOException e) {
+            System.out.println("[ClienteController] Error loading EditUserFXML");
         }
     }
 
@@ -172,15 +199,17 @@ public class ClientAuthenticatedController {
 
             Pane listUserEventsPane = loader.load();
 
-            mainContentArea.getChildren().clear();
-            mainContentArea.getChildren().add(listUserEventsPane);
+            Thread thread = new Thread(() -> {
+                ArrayList<Event> listEvents = client.listUserEvents("user");
 
-            ArrayList<Event> listEvents = client.listUserEvents("user");
-
-            Platform.runLater(() -> {
-                ListUserEventsController listUserEventsController = loader.getController();
-                listUserEventsController.initListUserEventsController(listEvents, this, false);
+                Platform.runLater(() -> {
+                    mainContentArea.getChildren().clear();
+                    mainContentArea.getChildren().add(listUserEventsPane);
+                    ListUserEventsController listUserEventsController = loader.getController();
+                    listUserEventsController.initListUserEventsController(listEvents, this, false, client);
+                });
             });
+            thread.start();
 
         } catch (IOException e) {
             System.out.println("[ClienteController] Error loading ListEventaFXML");
@@ -200,16 +229,12 @@ public class ClientAuthenticatedController {
 
             Platform.runLater(() -> {
                 ListUserEventsController listUserEventsController = loader.getController();
-                listUserEventsController.initListUserEventsController(listEvents, this, true);
+                listUserEventsController.initListUserEventsController(listEvents, this, true, client);
             });
 
         } catch (IOException e) {
             System.out.println("[ClienteController] Error loading ListEventaFXML");
         }
-    }
-
-    public Client getClient() {
-        return client;
     }
 
 
@@ -220,15 +245,17 @@ public class ClientAuthenticatedController {
 
             Pane listEventsPane = loader.load();
 
-            mainContentArea.getChildren().clear();
-            mainContentArea.getChildren().add(listEventsPane);
+            Thread thread = new Thread(() -> {
+                ArrayList<Event> listEvents = client.listEvents();
 
-            ArrayList<Event> listEvents = client.listEvents();
-
-            Platform.runLater(() -> {
-                ListEventsController listEventsController = loader.getController();
-                listEventsController.initListEventsController(listEvents, this);
+                Platform.runLater(() -> {
+                    mainContentArea.getChildren().clear();
+                    mainContentArea.getChildren().add(listEventsPane);
+                    ListEventsController listEventsController = loader.getController();
+                    listEventsController.initListEventsController(listEvents, this);
+                });
             });
+            thread.start();
 
         } catch (IOException e) {
             System.out.println("[ClienteController] Error loading ListEventaFXML");
@@ -274,13 +301,36 @@ public class ClientAuthenticatedController {
     }
 
     public void deleteEvent(Event event) {
-        boolean success = client.deleteEvent(event);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirmation Dialog");
+        alert.setHeaderText("Delete Event");
+        alert.setContentText("Are you sure you want to delete this event?");
 
-        if (success) {
-            showInfo("Operation successfully", LabelType.INFO);
-        } else {
-            showInfo("Operation Error!", LabelType.ERROR);
-        }
+        ButtonType buttonTypeYes = new ButtonType("Yes");
+        ButtonType buttonTypeNo = new ButtonType("No");
+
+        alert.getButtonTypes().setAll(buttonTypeYes, buttonTypeNo);
+
+        alert.showAndWait().ifPresent(buttonType -> {
+            if (buttonType == buttonTypeYes) {
+                showLoading();
+
+                Thread thread = new Thread(() -> {
+                    boolean success = client.deleteEvent(event);
+
+                    Platform.runLater(() -> {
+                        if (success) {
+                            showInfo("Event deleted successfully", LabelType.INFO);
+                        } else {
+                            showInfo("Error deleting event", LabelType.ERROR);
+                        }
+                        initListEvents();
+                    });
+                });
+
+                thread.start();
+            }
+        });
     }
 
     public void showEventAttendances(Event event) {
@@ -289,15 +339,17 @@ public class ClientAuthenticatedController {
 
             Pane listAttendancesPane = loader.load();
 
-            mainContentArea.getChildren().clear();
-            mainContentArea.getChildren().add(listAttendancesPane);
+            Thread thread = new Thread(() -> {
+                ArrayList<Attendance> listAttendances = client.listAttendences(event.getId());
 
-            ArrayList<Attendance> listAttendances = client.listAttendences(event.getId());
-
-            Platform.runLater(() -> {
-                ListAttendancesController listAttendancesController = loader.getController();
-                listAttendancesController.initListAttendancesController(listAttendances, this, event);
+                Platform.runLater(() -> {
+                    mainContentArea.getChildren().clear();
+                    mainContentArea.getChildren().add(listAttendancesPane);
+                    ListAttendancesController listAttendancesController = loader.getController();
+                    listAttendancesController.initListAttendancesController(listAttendances, this, event);
+                });
             });
+            thread.start();
 
         } catch (IOException e) {
             System.out.println("[ClienteController] Error loading ListEventaFXML");
@@ -330,22 +382,63 @@ public class ClientAuthenticatedController {
     public void addEventAttendance(int eventId, String username) {
         Attendance attendance = new Attendance(eventId, username);
 
-        boolean success = client.addAttendance(attendance);
+        Thread thread = new Thread(() -> {
+            boolean success = client.addAttendance(attendance);
 
-        if (success) {
-            showInfo("Operation successfully", LabelType.INFO);
-        } else {
-            showInfo("Operation Error!", LabelType.ERROR);
-        }
+            Platform.runLater(() -> {
+                if (success) {
+                    showInfo("Operation successfully", LabelType.INFO);
+                } else {
+                    showInfo("Operation Error!", LabelType.ERROR);
+                }
+            });
+        });
+        thread.start();
     }
 
-    public void deleteEventAttendance(Attendance registration) {
-        boolean success = client.deleteAttendance(registration);
+    public void deleteEventAttendance(Attendance registration, Event event) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setHeaderText("Delete Attendance");
+        alert.setContentText("Are you sure you want to delete this attendance?");
 
-        if (success) {
-            showInfo("Operation successfully", LabelType.INFO);
-        } else {
-            showInfo("Operation Error!", LabelType.ERROR);
-        }
+        ButtonType buttonTypeYes = new ButtonType("Yes");
+        ButtonType buttonTypeNo = new ButtonType("No");
+
+        alert.getButtonTypes().setAll(buttonTypeYes, buttonTypeNo);
+
+        alert.showAndWait().ifPresent(buttonType -> {
+            if (buttonType == buttonTypeYes) {
+                showLoading();
+
+                Thread thread = new Thread(() -> {
+                    boolean success = client.deleteAttendance(registration);
+
+                    Platform.runLater(() -> {
+                        if (success) {
+                            showInfo("Operation successfully", LabelType.INFO);
+                        } else {
+                            showInfo("Operation Error!", LabelType.ERROR);
+                        }
+                        showEventAttendances(event);
+                    });
+                });
+
+                thread.start();
+            }
+        });
+    }
+
+    private AnchorPane loadingPane() {
+        AnchorPane pane = new AnchorPane();
+        Label loadingLabel = new Label("Loading...");
+
+        AnchorPane.setLeftAnchor(loadingLabel, 0.0);
+        AnchorPane.setRightAnchor(loadingLabel, 0.0);
+        AnchorPane.setTopAnchor(loadingLabel, 0.0);
+        AnchorPane.setBottomAnchor(loadingLabel, 0.0);
+
+        pane.getChildren().add(loadingLabel);
+
+        return pane;
     }
 }

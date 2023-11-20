@@ -39,7 +39,7 @@
                        minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Server Address"/>
             <TextField fx:id="serverPortField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
                        minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Server Port"/>
-            <Button fx:id="connectServerButton" alignment="CENTER" mnemonicParsing="false"
+            <Button alignment="CENTER" mnemonicParsing="false"
                     onAction="#handleConnectServerButtonAction" prefHeight="23.0" prefWidth="370.0" text="Connect"/>
         </VBox>
         <VBox alignment="BOTTOM_CENTER" GridPane.rowIndex="2">

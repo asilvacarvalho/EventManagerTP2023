@@ -1,5 +1,6 @@
 package pt.isec.eventmanager.client;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 import pt.isec.eventmanager.users.UserKey;
@@ -12,9 +13,8 @@ public class UserKeyController {
     private ClientAuthenticatedController parentController;
     private Client client;
 
-    public void initUserKeyController(Client client, ClientAuthenticatedController controller) {
-        this.parentController = controller;
-        this.client = client;
+    @FXML
+    public void initialize() {
     }
 
     @FXML
@@ -25,18 +25,27 @@ public class UserKeyController {
             int userKey = Integer.parseInt(userKeyTextField.getText());
             UserKey newUserKey = new UserKey(client.getUser().getEmail(), userKey);
 
-            boolean success = client.insertUserKey(newUserKey);
+            Thread thread = new Thread(() -> {
+                boolean success = client.insertUserKey(newUserKey);
 
-            if (success) {
-                parentController.showInfo("Operation successfully", LabelType.INFO);
-                parentController.clearMainContentArea();
-            } else {
-                parentController.showInfo("Operation Error!", LabelType.ERROR);
-            }
-
+                Platform.runLater(() -> {
+                    if (success) {
+                        parentController.showInfo("Operation successfully", LabelType.INFO);
+                        parentController.clearMainContentArea();
+                    } else {
+                        parentController.showInfo("Operation Error!", LabelType.ERROR);
+                    }
+                });
+            });
+            thread.start();
         } catch (Exception e) {
             System.out.println("[UserKeyController] Error inserting user key " + e.getMessage());
             parentController.showInfo("Operation Error!", LabelType.ERROR);
         }
+    }
+
+    public void initUserKeyController(Client client, ClientAuthenticatedController controller) {
+        this.parentController = controller;
+        this.client = client;
     }
 }

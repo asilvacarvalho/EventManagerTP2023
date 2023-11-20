@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.net.URL?>
+<AnchorPane maxWidth="800.0" minWidth="800.0" prefWidth="800.0" styleClass="mainBorderPane"
+            xmlns="http://javafx.com/javafx/18.0.2" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="pt.isec.eventmanager.client.EditUserController">
+    <stylesheets>
+        <URL value="@../css/global.css"/>
+    </stylesheets>
+    <VBox alignment="TOP_CENTER" maxWidth="-Infinity" minWidth="-Infinity" prefWidth="800.0" spacing="15.0"
+          AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+          AnchorPane.topAnchor="0.0">
+        <HBox alignment="CENTER">
+            <VBox>
+                <Label text="Name"/>
+                <TextField fx:id="nameField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                           minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Name"/>
+            </VBox>
+        </HBox>
+        <HBox alignment="CENTER">
+            <VBox>
+                <Label text="Student Number"/>
+                <TextField fx:id="studentNumberField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                           minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Student Number"/>
+            </VBox>
+        </HBox>
+        <HBox alignment="CENTER">
+            <VBox>
+                <Label text="Email (Username)"/>
+                <TextField fx:id="emailField" disable="true" editable="false" focusTraversable="false"
+                           maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+                           prefHeight="30.0" prefWidth="370.0" promptText="Email"/>
+            </VBox>
+        </HBox>
+        <HBox alignment="CENTER">
+            <VBox>
+                <Label text="Password"/>
+                <PasswordField fx:id="passwordField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                               minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Password"/>
+                <PasswordField fx:id="newPasswordField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                               minWidth="-Infinity" prefHeight="30.0" prefWidth="370.0" promptText="Retype Password">
+                    <VBox.margin>
+                        <Insets top="10.0"/>
+                    </VBox.margin>
+                </PasswordField>
+            </VBox>
+        </HBox>
+        <Button fx:id="saveButton" alignment="CENTER" mnemonicParsing="false" onAction="#handleSaveButtonAction"
+                prefHeight="23.0" prefWidth="370.0" text="Save">
+        </Button>
+    </VBox>
+</AnchorPane>

@@ -1,9 +1,11 @@
 package pt.isec.eventmanager.client;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.DateCell;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import pt.isec.eventmanager.events.Event;
 import pt.isec.eventmanager.util.LabelType;
 
@@ -14,6 +16,8 @@ import java.time.ZoneId;
 import java.util.Date;
 
 public class AddEventController {
+    @FXML
+    public VBox eventInfoBox;
     @FXML
     private TextField nameField;
     @FXML
@@ -32,6 +36,7 @@ public class AddEventController {
 
     @FXML
     public void initialize() {
+        eventInfoBox.setVisible(false);
         datePicker.setDayCellFactory(picker -> new DateCell() {
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
@@ -40,33 +45,6 @@ public class AddEventController {
                 setDisable(empty || date.isBefore(today));
             }
         });
-    }
-
-    public void initAddEventController(Client client, ClientAuthenticatedController controller) {
-        this.client = client;
-        this.parentController = controller;
-    }
-
-    public void initEditEventController(Client client, ClientAuthenticatedController controller, Event event) {
-        this.eventEdit = event;
-        this.client = client;
-        this.parentController = controller;
-
-        nameField.setText(eventEdit.getName());
-        locationField.setText(eventEdit.getLocation());
-        startTimeField.setText(eventEdit.getStartTime());
-        endTimeField.setText(eventEdit.getEndTime());
-
-        Date date = eventEdit.getDate();
-        Instant instant = date.toInstant();
-        LocalDate localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
-        datePicker.setValue(localDate);
-
-        if (client.checkEventHasAttendences(eventEdit.getId())) {
-            startTimeField.setDisable(true);
-            endTimeField.setDisable(true);
-            datePicker.setDisable(true);
-        }
     }
 
     @FXML
@@ -105,26 +83,67 @@ public class AddEventController {
         String eventStartTime = startTimeField.getText();
         String eventEndTime = endTimeField.getText();
 
-        boolean success;
+        Thread thread = new Thread(() -> {
+            boolean success;
 
-        if (eventEdit != null) {
-            eventEdit.setName(eventName);
-            eventEdit.setLocation(eventLocation);
-            eventEdit.setDate(eventDate);
-            eventEdit.setStartTime(eventStartTime);
-            eventEdit.setEndTime(eventEndTime);
-            success = client.editEvent(eventEdit);
-        } else {
-            success = client.addEvent(new Event(eventName, eventLocation, eventDate, eventStartTime, eventEndTime));
-        }
+            if (eventEdit != null) {
+                eventEdit.setName(eventName);
+                eventEdit.setLocation(eventLocation);
+                eventEdit.setDate(eventDate);
+                eventEdit.setStartTime(eventStartTime);
+                eventEdit.setEndTime(eventEndTime);
+                success = client.editEvent(eventEdit);
+            } else {
+                success = client.addEvent(new Event(eventName, eventLocation, eventDate, eventStartTime, eventEndTime));
+            }
 
-        if (success) {
-            parentController.showInfo("Operation successfully", LabelType.INFO);
-        } else {
-            parentController.showInfo("Operation Error!", LabelType.ERROR);
-        }
+            Platform.runLater(() -> {
+                if (success) {
+                    parentController.showInfo("Operation successfully", LabelType.INFO);
+                } else {
+                    parentController.showInfo("Operation Error!", LabelType.ERROR);
+                }
+            });
+        });
+        thread.start();
 
         clearForm();
+    }
+
+    public void initAddEventController(Client client, ClientAuthenticatedController controller) {
+        this.client = client;
+        this.parentController = controller;
+        eventInfoBox.setVisible(true);
+    }
+
+    public void initEditEventController(Client client, ClientAuthenticatedController controller, Event event) {
+        this.eventEdit = event;
+        this.client = client;
+        this.parentController = controller;
+
+        nameField.setText(eventEdit.getName());
+        locationField.setText(eventEdit.getLocation());
+        startTimeField.setText(eventEdit.getStartTime());
+        endTimeField.setText(eventEdit.getEndTime());
+
+        Date date = eventEdit.getDate();
+        Instant instant = date.toInstant();
+        LocalDate localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        datePicker.setValue(localDate);
+
+        Thread thread = new Thread(() -> {
+            boolean success = client.checkEventHasAttendences(eventEdit.getId());
+
+            Platform.runLater(() -> {
+                if (success) {
+                    startTimeField.setDisable(true);
+                    endTimeField.setDisable(true);
+                    datePicker.setDisable(true);
+                }
+                eventInfoBox.setVisible(true);
+            });
+        });
+        thread.start();
     }
 
     private void clearForm() {

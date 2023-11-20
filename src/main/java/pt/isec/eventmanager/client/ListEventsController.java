@@ -91,6 +91,7 @@ public class ListEventsController {
 
     public void initListEventsController(ArrayList<Event> listEvents, ClientAuthenticatedController controller) {
         this.clientAuthenticatedController = controller;
+        eventTableView.getItems().clear();
         eventTableView.getItems().addAll(listEvents);
     }
 }
