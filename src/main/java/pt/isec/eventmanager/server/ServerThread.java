@@ -54,6 +54,9 @@ public class ServerThread extends Thread {
                         case Constants.INSERTUSERKEY_REQUEST:
                             insertUserKey(oin, oout, dbUrl);
                             break;
+                        case Constants.LISTUSEREVENTS_REQUEST:
+                            listUserEvents(oin, oout, dbUrl);
+                            break;
                         case Constants.INSERTEVENT_REQUEST:
                             insertEvent(oin, oout, dbUrl);
                             break;
@@ -133,6 +136,23 @@ public class ServerThread extends Thread {
             boolean registationSuccess = EventManagerDB.insertUser(conn, newUser, serverController);
 
             oout.writeObject(registationSuccess);
+            oout.flush();
+        } catch (SQLException e) {
+            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+        }
+    }
+
+    private void listUserEvents(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
+        String username = (String) oin.readObject();
+
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+            System.out.println("[ServerThread] Connection Established to " + dbUrl);
+            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+
+            ArrayList<Event> listEvents = EventManagerDB.listUserEvents(conn, username, serverController);
+
+            oout.writeObject(listEvents);
             oout.flush();
         } catch (SQLException e) {
             System.err.println("[ServerThread] Connection Error: " + e.getMessage());

@@ -174,6 +174,54 @@ public class EventoModel {
         return events;
     }
 
+    public static ArrayList<Event> listUserEvents(Connection conn, String username, ServerController controller) {
+        ArrayList<Event> events = new ArrayList<>();
+
+        ArrayList<Integer> eventIds = EventoUtilizadorModel.getEventIdsForUser(conn, username, controller);
+
+        if (!eventIds.isEmpty()) {
+            StringBuilder eventsQuery = new StringBuilder("SELECT * FROM evento WHERE id IN (");
+            for (int i = 0; i < eventIds.size(); i++) {
+                eventsQuery.append("?");
+                if (i != eventIds.size() - 1) {
+                    eventsQuery.append(",");
+                }
+            }
+            eventsQuery.append(")");
+
+            try (PreparedStatement eventsStatement = conn.prepareStatement(eventsQuery.toString())) {
+                for (int i = 0; i < eventIds.size(); i++) {
+                    eventsStatement.setInt(i + 1, eventIds.get(i));
+                }
+
+                ResultSet eventsResultSet = eventsStatement.executeQuery();
+
+                while (eventsResultSet.next()) {
+                    int id = eventsResultSet.getInt("id");
+                    String name = eventsResultSet.getString("name");
+                    String location = eventsResultSet.getString("location");
+                    Date date = new Date(eventsResultSet.getTimestamp("start_date").getTime());
+
+                    Date startDate = eventsResultSet.getTimestamp("start_date");
+                    Date endDate = eventsResultSet.getTimestamp("end_date");
+
+                    String startTimeString = new SimpleDateFormat("HH:mm").format(startDate);
+                    String endTimeString = new SimpleDateFormat("HH:mm").format(endDate);
+
+                    Event event = new Event(name, location, date, startTimeString, endTimeString);
+                    event.setId(id);
+                    events.add(event);
+                }
+            } catch (SQLException e) {
+                System.err.println("[EventManagerDB] Error listing user events: " + e.getMessage());
+                controller.addToConsole("[EventManagerDB] Error listing user events: " + e.getMessage());
+            }
+        }
+
+        return events;
+    }
+
+
     public static boolean eventHasAttendences(Connection conn, int eventId, ServerController controller) {
         String checkEventUserQuery = "SELECT * FROM evento_utilizador WHERE evento_id=?";
 

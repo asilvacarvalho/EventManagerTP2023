@@ -174,6 +174,10 @@ public class EventManagerDB {
         return UtilizadorModel.getUser(conn, username, controller);
     }
 
+    public static ArrayList<Event> listUserEvents(Connection conn, String username, ServerController controller) {
+        return EventoModel.listUserEvents(conn, username, controller);
+    }
+
     //EVENTO
     public static Event getEvent(Connection conn, int eventId, ServerController controller) {
         return EventoModel.getEvent(conn, eventId, controller);

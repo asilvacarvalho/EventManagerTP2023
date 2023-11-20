@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.control.cell.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+<?import java.net.URL?>
+<AnchorPane maxWidth="-Infinity" minWidth="-Infinity" prefWidth="800.0" styleClass="mainBorderPane"
+            xmlns="http://javafx.com/javafx/18.0.2" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="pt.isec.eventmanager.client.ListUserEventsController">
+    <stylesheets>
+        <URL value="@../css/global.css"/>
+    </stylesheets>
+    <VBox maxWidth="-Infinity" minWidth="-Infinity" prefWidth="800.0" spacing="15.0" AnchorPane.bottomAnchor="0.0"
+          AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <HBox alignment="TOP_CENTER" prefHeight="400.0" prefWidth="800.0" spacing="10.0">
+            <VBox maxWidth="-Infinity" minWidth="-Infinity" prefWidth="630.0">
+                <padding>
+                    <Insets left="5.0"/>
+                </padding>
+                <TableView fx:id="eventTableView" maxWidth="-Infinity" minWidth="-Infinity" prefWidth="580.0">
+                    <columns>
+                        <TableColumn maxWidth="500.0" prefWidth="150.0" styleClass="table-row-centerLeft" text="Name">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="name"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn maxWidth="500.0" prefWidth="150.0" styleClass="table-row-centerLeft"
+                                     text="Location">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="location"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn fx:id="dateColumn" maxWidth="500.0" prefWidth="100.0"
+                                     styleClass="table-row-centered" text="Date">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="date"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn maxWidth="500.0" prefWidth="90.0" styleClass="table-row-centered"
+                                     text="Start Time">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="startTime"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn maxWidth="500.0" minWidth="0.0" prefWidth="90.0" styleClass="table-row-centered"
+                                     text="End Time">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="endTime"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </VBox>
+            <VBox alignment="TOP_CENTER" maxWidth="-Infinity" minWidth="-Infinity" prefWidth="155.0" spacing="10">
+                <VBox alignment="TOP_RIGHT" spacing="20.0">
+                    <Button onAction="#generateCSVButtonAction" style="-fx-pref-width: 150;" text="Download CSV"/>
+                </VBox>
+                <padding>
+                    <Insets right="5.0"/>
+                </padding>
+            </VBox>
+        </HBox>
+        <HBox fx:id="userHBox" alignment="BOTTOM_LEFT" spacing="15.0">
+            <Label text="Username">
+                <font>
+                    <Font size="18.0"/>
+                </font>
+            </Label>
+            <TextField fx:id="userField" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                       minWidth="-Infinity" prefHeight="30.0" prefWidth="250.0"/>
+            <Button alignment="CENTER" mnemonicParsing="false" onAction="#handleSearchEvent" prefHeight="38.0"
+                    prefWidth="203.0" text="Search"/>
+            <padding>
+                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+            </padding>
+        </HBox>
+    </VBox>
+</AnchorPane>

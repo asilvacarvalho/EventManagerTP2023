@@ -127,6 +127,35 @@ public class Client {
         return false;
     }
 
+    public ArrayList<Event> listUserEvents(String username) {
+        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
+             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
+             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+
+            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+
+            oout.writeObject(Constants.LISTUSEREVENTS_REQUEST);
+            oout.flush();
+
+            if (user.isAdmin())
+                oout.writeObject(username);
+            else
+                oout.writeObject(user.getEmail());
+            oout.flush();
+
+            try {
+                return (ArrayList<Event>) oin.readObject();
+            } catch (SocketTimeoutException e) {
+                System.out.println("[Client] Socket timeout");
+                return null;
+            }
+
+        } catch (Exception e) {
+            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+        }
+        return null;
+    }
+
     //EVENTS
     public boolean addEvent(Event event) {
         try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
@@ -165,7 +194,6 @@ public class Client {
 
             socket.setSoTimeout(Constants.TIMEOUT * 1000);
 
-            // Enviar o tipo de operação
             oout.writeObject(Constants.LISTEVENTS_REQUEST);
             oout.flush();
 
