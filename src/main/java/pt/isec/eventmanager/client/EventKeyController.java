@@ -1,5 +1,6 @@
 package pt.isec.eventmanager.client;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
@@ -36,21 +37,6 @@ public class EventKeyController {
     public void initialize() {
     }
 
-    public void initEventKeyController(Client client, ClientAuthenticatedController controller, Event event) {
-        this.parentController = controller;
-        this.client = client;
-        this.event = event;
-
-        EventKey currentKey = client.getEventKey(event);
-
-        if (currentKey != null) {
-            currentCodeField.setText(currentKey.getCode().toString());
-            currentDurationField.setText(currentKey.getEndDate().toString());
-        } else {
-            currentKeyBox.setVisible(false);
-        }
-    }
-
     @FXML
     public void handleSaveEvent() {
         if (durationField.getText().isEmpty()) return;
@@ -76,16 +62,41 @@ public class EventKeyController {
 
         eventKey.generateCode();
 
-        boolean success = client.insertEventKey(eventKey);
+        Thread thread = new Thread(() -> {
+            boolean success = client.insertEventKey(eventKey);
 
-        if (success) {
-            parentController.showInfo("Operation successfully", LabelType.INFO);
-            eventKeyMainBox.getChildren().remove(currentKeyBox);
-            eventKeyMainBox.getChildren().remove(generateKeyBox);
-            newEventKeyTextField.setText(eventKey.getCode().toString());
-            newEventKeyBox.setVisible(true);
-        } else {
-            parentController.showInfo("Operation Error!", LabelType.ERROR);
-        }
+            Platform.runLater(() -> {
+                if (success) {
+                    parentController.showInfo("Operation successfully", LabelType.INFO);
+                    eventKeyMainBox.getChildren().remove(currentKeyBox);
+                    eventKeyMainBox.getChildren().remove(generateKeyBox);
+                    newEventKeyTextField.setText(eventKey.getCode().toString());
+                    newEventKeyBox.setVisible(true);
+                } else {
+                    parentController.showInfo("Operation Error!", LabelType.ERROR);
+                }
+            });
+        });
+        thread.start();
+    }
+
+    public void initEventKeyController(Client client, ClientAuthenticatedController controller, Event event) {
+        this.parentController = controller;
+        this.client = client;
+        this.event = event;
+
+        Thread thread = new Thread(() -> {
+            EventKey currentKey = client.getEventKey(event);
+
+            Platform.runLater(() -> {
+                if (currentKey != null) {
+                    currentCodeField.setText(currentKey.getCode().toString());
+                    currentDurationField.setText(currentKey.getEndDate().toString());
+                } else {
+                    currentKeyBox.setVisible(false);
+                }
+            });
+        });
+        thread.start();
     }
 }

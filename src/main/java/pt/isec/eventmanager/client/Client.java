@@ -127,6 +127,40 @@ public class Client {
         return false;
     }
 
+    public boolean editUser(User user) {
+        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
+             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
+             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+
+            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+
+            // Enviar o tipo de operação
+            oout.writeObject(Constants.EDITUSER_REQUEST);
+            oout.flush();
+
+            oout.writeObject(user);
+            oout.flush();
+
+            try {
+                // Receber resposta do servidor
+                boolean success = (boolean) oin.readObject();
+
+                if (success) {
+                    this.user = user;
+                    return true;
+                }
+            } catch (SocketTimeoutException e) {
+                System.out.println("[Client] Socket timeout");
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
     public ArrayList<Event> listUserEvents(String username) {
         try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
@@ -187,6 +221,7 @@ public class Client {
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     public ArrayList<Event> listEvents() {
         try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());

@@ -38,24 +38,11 @@ public class ClientLoginController {
 
     private boolean registering = false;
 
-
     @FXML
     private void initialize() {
         //TODO: remove after testing
         emailField.setText("admin");
         passwordField.setText("admin");
-    }
-
-    public void initLoginController(Stage stage, Client client) {
-        this.mainStage = stage;
-        this.client = client;
-    }
-
-    public void handleLogout(Stage stage, Client client) {
-        this.mainStage = stage;
-        this.client = client;
-        this.client.logout();
-        clearTextFields();
     }
 
     @FXML
@@ -69,12 +56,20 @@ public class ClientLoginController {
             return;
         }
 
-        if (client.login(email, password)) {
-            showAuthenticatedUI();
-        } else {
-            System.out.println("[ClientLoginController] Login Error!");
-            showInfo("Login Error!", LabelType.ERROR);
-        }
+        Thread thread = new Thread(() -> {
+            boolean success = client.login(email, password);
+
+            Platform.runLater(() -> {
+                if (success) {
+                    showAuthenticatedUI();
+                } else {
+                    System.out.println("[ClientLoginController] Login Error!");
+                    showInfo("Login Error!", LabelType.ERROR);
+                }
+            });
+        });
+
+        thread.start();
     }
 
     @FXML
@@ -90,21 +85,40 @@ public class ClientLoginController {
                 clearTextFields();
                 hideRegistrationNewUser();
             } else {
-                if (client.registerUser(email, password, name, studentNumber)) {
-                    System.out.println("[ClientLoginController] New User Registration Success!");
-                    showInfo("New User Registration Success!", LabelType.INFO);
-                    hideRegistrationNewUser();
-                } else {
-                    System.err.println("[ClientLoginController] New User Registration Error!");
-                    showInfo("Registration Error!", LabelType.ERROR);
-                    clearTextFields();
-                    hideRegistrationNewUser();
-                }
-            }
+                Thread thread = new Thread(() -> {
+                    boolean success = client.registerUser(email, password, name, studentNumber);
 
+                    Platform.runLater(() -> {
+                        if (success) {
+                            System.out.println("[ClientLoginController] New User Registration Success!");
+                            showInfo("New User Registration Success!", LabelType.INFO);
+                            hideRegistrationNewUser();
+                        } else {
+                            System.err.println("[ClientLoginController] New User Registration Error!");
+                            showInfo("Registration Error!", LabelType.ERROR);
+                            clearTextFields();
+                            hideRegistrationNewUser();
+                        }
+                    });
+                });
+                thread.start();
+            }
         } else {
             showRegistrationNewUser();
         }
+    }
+
+
+    public void initLoginController(Stage stage, Client client) {
+        this.mainStage = stage;
+        this.client = client;
+    }
+
+    public void handleLogout(Stage stage, Client client) {
+        this.mainStage = stage;
+        this.client = client;
+        this.client.logout();
+        clearTextFields();
     }
 
     private void showAuthenticatedUI() {
@@ -133,6 +147,7 @@ public class ClientLoginController {
     }
 
     private void showRegistrationNewUser() {
+        clearTextFields();
         nameField.setVisible(true);
         studentNumberField.setVisible(true);
         loginButton.setVisible(false);
@@ -153,7 +168,7 @@ public class ClientLoginController {
         infoLabel.setText(msg);
         infoLabel.setVisible(true);
 
-        PauseTransition visiblePause = new PauseTransition(Duration.seconds(3));
+        PauseTransition visiblePause = new PauseTransition(Duration.seconds(7));
         visiblePause.setOnFinished(event -> infoLabel.setVisible(false));
         visiblePause.play();
     }

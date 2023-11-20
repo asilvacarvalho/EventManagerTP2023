@@ -32,6 +32,28 @@ public class UtilizadorModel {
         return null;
     }
 
+    public static User getUser(Connection conn, String username, ServerController controller) {
+        String query = "SELECT * FROM utilizador WHERE email=?";
+        try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+            preparedStatement.setString(1, username);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                return new User(
+                        resultSet.getString("email"),
+                        resultSet.getString("password"),
+                        resultSet.getString("name"),
+                        resultSet.getString("student_number"),
+                        resultSet.getBoolean("admin")
+                );
+            }
+        } catch (SQLException e) {
+            System.err.println("[EventManagerDB] Error getting User: " + e.getMessage());
+            controller.addToConsole("[EventManagerDB] Error getting User: " + e.getMessage());
+        }
+        return null;
+    }
+
     public static boolean insertUser(Connection conn, User user, ServerController controller) {
         String queryCheckEmail = "SELECT COUNT(*) FROM utilizador WHERE email = ?";
         String queryInsertUser = "INSERT INTO utilizador (email, password, name, student_number, admin) VALUES (?, ?, ?, ?, ?)";
@@ -67,25 +89,37 @@ public class UtilizadorModel {
         return false;
     }
 
-    public static User getUser(Connection conn, String username, ServerController controller) {
-        String query = "SELECT * FROM utilizador WHERE email=?";
-        try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
-            preparedStatement.setString(1, username);
+    public static boolean editUser(Connection conn, User user, ServerController controller) {
+        String queryCheckEmail = "SELECT COUNT(*) FROM utilizador WHERE email = ?";
+        String queryUpdateUser = "UPDATE utilizador SET password = ?, name = ?, student_number = ? WHERE email = ?";
 
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                return new User(
-                        resultSet.getString("email"),
-                        resultSet.getString("password"),
-                        resultSet.getString("name"),
-                        resultSet.getString("student_number"),
-                        resultSet.getBoolean("admin")
-                );
+        try (PreparedStatement checkEmailStatement = conn.prepareStatement(queryCheckEmail);
+             PreparedStatement updateUserStatement = conn.prepareStatement(queryUpdateUser)) {
+
+            // Verifica se o email existe na tabela
+            checkEmailStatement.setString(1, user.getEmail());
+            ResultSet resultSet = checkEmailStatement.executeQuery();
+            if (!resultSet.next() || resultSet.getInt(1) == 0) {
+                System.err.println("[EventManagerDB] Error updating user, email not found");
+                controller.addToConsole("[EventManagerDB] Error updating user, email not found");
+                return false;
+            }
+
+            updateUserStatement.setString(1, user.getPassword());
+            updateUserStatement.setString(2, user.getName());
+            updateUserStatement.setString(3, user.getStudentNumber());
+            updateUserStatement.setString(4, user.getEmail());
+
+            int rowsAffected = updateUserStatement.executeUpdate();
+
+            if (rowsAffected > 0) {
+                return true;
             }
         } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error getting User: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error getting User: " + e.getMessage());
+            System.err.println("[EventManagerDB] Error updating user: " + e.getMessage());
+            controller.addToConsole("[EventManagerDB] Error updating user: " + e.getMessage());
         }
-        return null;
+
+        return false;
     }
 }
