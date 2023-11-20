@@ -12,6 +12,7 @@ public class Constants implements Serializable {
     //USERS
     public static final String AUTHENTICATION_REQUEST = "AUTHENTICATE";
     public static final String INSERTUSER_REQUEST = "INSERTUSER";
+    public static final String LISTUSEREVENTS_REQUEST = "LISTUSEREVENTS";
 
     //EVENTS
     public static final String LISTEVENTS_REQUEST = "LISTEVENTS";

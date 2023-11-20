@@ -65,25 +65,27 @@ public class ClientAuthenticatedController {
     }
 
     @FXML
-    public void handleattendancesButtonButtonAction() {
+    public void handleAttendancesButtonAction() {
+        initListUserEvents();
     }
 
     @FXML
-    public void handleeditProfileButtonButtonAction() {
+    public void handleEditProfileButtonAction() {
     }
 
     @FXML
-    private void handlelistEventButtonAction() {
+    private void handleListEventButtonAction() {
         initListEvents();
     }
 
     @FXML
-    private void handlecreateEventButtonAction() {
+    private void handleCreateEventButtonAction() {
         createEvent();
     }
 
     @FXML
-    public void handlecheckUserAttendaceButtonAction() {
+    public void handleCheckUserAttendaceButtonAction() {
+        initAdminListUserEvents();
     }
 
 
@@ -162,6 +164,52 @@ public class ClientAuthenticatedController {
         } catch (IOException e) {
             System.out.println("[ClienteController] Error loading AddEventFXML");
         }
+    }
+
+    public void initListUserEvents() {
+        try {
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/list-user-events.fxml"));
+
+            Pane listUserEventsPane = loader.load();
+
+            mainContentArea.getChildren().clear();
+            mainContentArea.getChildren().add(listUserEventsPane);
+
+            ArrayList<Event> listEvents = client.listUserEvents("user");
+
+            Platform.runLater(() -> {
+                ListUserEventsController listUserEventsController = loader.getController();
+                listUserEventsController.initListUserEventsController(listEvents, this, false);
+            });
+
+        } catch (IOException e) {
+            System.out.println("[ClienteController] Error loading ListEventaFXML");
+        }
+    }
+
+    public void initAdminListUserEvents() {
+        try {
+            FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/list-user-events.fxml"));
+
+            Pane listUserEventsPane = loader.load();
+
+            mainContentArea.getChildren().clear();
+            mainContentArea.getChildren().add(listUserEventsPane);
+
+            ArrayList<Event> listEvents = new ArrayList<>();
+
+            Platform.runLater(() -> {
+                ListUserEventsController listUserEventsController = loader.getController();
+                listUserEventsController.initListUserEventsController(listEvents, this, true);
+            });
+
+        } catch (IOException e) {
+            System.out.println("[ClienteController] Error loading ListEventaFXML");
+        }
+    }
+
+    public Client getClient() {
+        return client;
     }
 
 

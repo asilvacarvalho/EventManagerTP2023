@@ -24,16 +24,16 @@
               spacing="10" style="-fx-background-color: #E0E0E0; -fx-padding: 10;">
             <Button fx:id="codeSubmitButton" onAction="#handleCodeSubmitButtonAction" style="-fx-pref-width: 150;"
                     text="Code Submit"/>
-            <Button fx:id="attendancesButton" onAction="#handleattendancesButtonButtonAction"
+            <Button fx:id="attendancesButton" onAction="#handleAttendancesButtonAction"
                     style="-fx-pref-width: 150;" text="Attendances"/>
-            <Button fx:id="editProfileButton" onAction="#handleeditProfileButtonButtonAction"
+            <Button fx:id="editProfileButton" onAction="#handleEditProfileButtonAction"
                     style="-fx-pref-width: 150;" text="Edit Profile"/>
 
-            <Button fx:id="listEventsButton" onAction="#handlelistEventButtonAction" style="-fx-pref-width: 150;"
+            <Button fx:id="listEventsButton" onAction="#handleListEventButtonAction" style="-fx-pref-width: 150;"
                     text="List Event" visible="false"/>
-            <Button fx:id="createEventButton" onAction="#handlecreateEventButtonAction" style="-fx-pref-width: 150;"
+            <Button fx:id="createEventButton" onAction="#handleCreateEventButtonAction" style="-fx-pref-width: 150;"
                     text="Create Event" visible="false"/>
-            <Button fx:id="checkAttendaceButton" onAction="#handlecheckUserAttendaceButtonAction"
+            <Button fx:id="checkAttendaceButton" onAction="#handleCheckUserAttendaceButtonAction"
                     style="-fx-pref-width: 150;" text="Check User Attendaces"
                     visible="false"/>
         </VBox>

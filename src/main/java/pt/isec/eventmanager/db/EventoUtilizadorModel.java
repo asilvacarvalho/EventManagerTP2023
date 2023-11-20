@@ -32,6 +32,27 @@ public class EventoUtilizadorModel {
         return attendanceEvent;
     }
 
+    public static ArrayList<Integer> getEventIdsForUser(Connection conn, String username, ServerController controller) {
+        ArrayList<Integer> eventIds = new ArrayList<>();
+        String eventIdsQuery = "SELECT evento_id FROM evento_utilizador WHERE utilizador_email=?";
+
+        try (PreparedStatement preparedStatement = conn.prepareStatement(eventIdsQuery)) {
+            preparedStatement.setString(1, username);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                int eventId = resultSet.getInt("evento_id");
+                eventIds.add(eventId);
+            }
+        } catch (SQLException e) {
+            System.err.println("[EventManagerDB] Error getting event IDs for user: " + e.getMessage());
+            controller.addToConsole("[EventManagerDB] Error getting event IDs for user: " + e.getMessage());
+        }
+
+        return eventIds;
+    }
+
+
     public static boolean insertUserPresenceForEvent(Connection conn, int eventId, String username, ServerController controller) {
         //TODO: Se for feito fora do período de validade do código ou de realização do evento, a operação
         // falha. O mesmo ocorre se um utilizador introduzir um código relativo a um
