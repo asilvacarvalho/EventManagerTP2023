@@ -6,6 +6,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
 import javafx.util.Callback;
 import pt.isec.eventmanager.MainClient;
@@ -18,6 +19,8 @@ import java.util.Date;
 
 public class ListEventsController {
     @FXML
+    public TextField searchField;
+    @FXML
     private TableColumn<Event, Date> dateColumn;
     @FXML
     private TableView<Event> eventTableView;
@@ -25,11 +28,42 @@ public class ListEventsController {
     private TableColumn<Event, String> optionsColumn;
 
     private ClientAuthenticatedController clientAuthenticatedController;
+    private ArrayList<Event> listEvents;
 
     @FXML
     public void initialize() {
         formateDateColumn();
         initOptionsColumn();
+    }
+
+    @FXML
+    public void handleSearchButtonAction() {
+        String searchText = searchField.getText().trim();
+
+        if (!searchText.isEmpty()) {
+            ArrayList<Event> filteredEvents = new ArrayList<>();
+
+            for (Event event : eventTableView.getItems()) {
+                if (event.getName().toLowerCase().contains(searchText.toLowerCase()) ||
+                        event.getLocation().toLowerCase().contains(searchText.toLowerCase()) ||
+                        event.getDate().toString().contains(searchText)) {
+                    filteredEvents.add(event);
+                }
+            }
+
+            eventTableView.getItems().clear();
+            eventTableView.getItems().addAll(filteredEvents);
+        } else {
+            eventTableView.getItems().clear();
+            eventTableView.getItems().addAll(listEvents);
+        }
+    }
+
+    @FXML
+    public void handleClearButtonAction() {
+        searchField.setText("");
+        eventTableView.getItems().clear();
+        eventTableView.getItems().addAll(listEvents);
     }
 
     private void formateDateColumn() {
@@ -91,6 +125,7 @@ public class ListEventsController {
 
     public void initListEventsController(ArrayList<Event> listEvents, ClientAuthenticatedController controller) {
         this.clientAuthenticatedController = controller;
+        this.listEvents = listEvents;
         eventTableView.getItems().clear();
         eventTableView.getItems().addAll(listEvents);
     }

@@ -9,6 +9,9 @@ import pt.isec.eventmanager.users.User;
 import pt.isec.eventmanager.users.UserKey;
 import pt.isec.eventmanager.util.Constants;
 
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -17,7 +20,12 @@ import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Properties;
 
 public class ServerThread extends Thread {
     private final ServerController serverController;
@@ -25,11 +33,15 @@ public class ServerThread extends Thread {
     //private int threadNumber;
     private final String dbUrl;
 
-    public ServerThread(Socket toClientSocket, int threadNumber, String dbUrl, ServerController controller) {
+    private Server server;
+    private final Object lock = new Object();
+
+    public ServerThread(Socket toClientSocket, int threadNumber, String dbUrl, ServerController controller, Server server) {
         this.serverController = controller;
         this.toClientSocket = toClientSocket;
         //this.threadNumber = threadNumber;
         this.dbUrl = dbUrl;
+        this.server = server;
     }
 
     @Override
@@ -118,7 +130,6 @@ public class ServerThread extends Thread {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
             System.out.println("[ServerThread] Connection Established to " + dbUrl);
             serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
             User authenticatedUser = EventManagerDB.authenticateUser(conn, requestUser, serverController);
 
             oout.writeObject(authenticatedUser);
@@ -130,36 +141,45 @@ public class ServerThread extends Thread {
     }
 
     private void insertUser(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
-        User newUser = (User) oin.readObject();
+        synchronized (lock) {
+            User newUser = (User) oin.readObject();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
-            System.out.println("[ServerThread] Connection Established to " + dbUrl);
-            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+                System.out.println("[ServerThread] Connection Established to " + dbUrl);
+                serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
 
-            boolean registationSuccess = EventManagerDB.insertUser(conn, newUser, serverController);
+                boolean success = EventManagerDB.insertUser(conn, newUser, serverController);
 
-            oout.writeObject(registationSuccess);
-            oout.flush();
-        } catch (SQLException e) {
-            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
-            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+                oout.writeObject(success);
+                oout.flush();
+
+                incrementDBVersion(success);
+
+            } catch (SQLException e) {
+                System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+                serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+            }
         }
     }
 
     private void editUser(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
-        User newUser = (User) oin.readObject();
+        synchronized (lock) {
+            User newUser = (User) oin.readObject();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
-            System.out.println("[ServerThread] Connection Established to " + dbUrl);
-            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+                System.out.println("[ServerThread] Connection Established to " + dbUrl);
+                serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
 
-            boolean success = EventManagerDB.editUser(conn, newUser, serverController);
+                boolean success = EventManagerDB.editUser(conn, newUser, serverController);
 
-            oout.writeObject(success);
-            oout.flush();
-        } catch (SQLException e) {
-            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
-            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+                oout.writeObject(success);
+                oout.flush();
+
+                incrementDBVersion(success);
+            } catch (SQLException e) {
+                System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+                serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+            }
         }
     }
 
@@ -197,53 +217,65 @@ public class ServerThread extends Thread {
     }
 
     private void insertEvent(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
-        Event newEvent = (Event) oin.readObject();
+        synchronized (lock) {
+            Event newEvent = (Event) oin.readObject();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
-            System.out.println("[ServerThread] Connection Established to " + dbUrl);
-            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+                System.out.println("[ServerThread] Connection Established to " + dbUrl);
+                serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
 
-            boolean eventAddedSuccess = EventManagerDB.insertEvent(conn, newEvent, serverController);
+                boolean success = EventManagerDB.insertEvent(conn, newEvent, serverController);
 
-            oout.writeObject(eventAddedSuccess);
-            oout.flush();
-        } catch (SQLException e) {
-            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
-            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+                oout.writeObject(success);
+                oout.flush();
+
+                incrementDBVersion(success);
+            } catch (SQLException e) {
+                System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+                serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+            }
         }
     }
 
     private void editEvent(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
-        Event newEvent = (Event) oin.readObject();
+        synchronized (lock) {
+            Event newEvent = (Event) oin.readObject();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
-            System.out.println("[ServerThread] Connection Established to " + dbUrl);
-            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+                System.out.println("[ServerThread] Connection Established to " + dbUrl);
+                serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
 
-            boolean editEventSuccess = EventManagerDB.editEvent(conn, newEvent, serverController);
+                boolean success = EventManagerDB.editEvent(conn, newEvent, serverController);
 
-            oout.writeObject(editEventSuccess);
-            oout.flush();
-        } catch (SQLException e) {
-            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
-            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+                oout.writeObject(success);
+                oout.flush();
+
+                incrementDBVersion(success);
+            } catch (SQLException e) {
+                System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+                serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+            }
         }
     }
 
     private void deleteEvent(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
-        Event newEvent = (Event) oin.readObject();
+        synchronized (lock) {
+            Event newEvent = (Event) oin.readObject();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
-            System.out.println("[ServerThread] Connection Established to " + dbUrl);
-            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+                System.out.println("[ServerThread] Connection Established to " + dbUrl);
+                serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
 
-            boolean success = EventManagerDB.deleteEvent(conn, newEvent, serverController);
+                boolean success = EventManagerDB.deleteEvent(conn, newEvent, serverController);
 
-            oout.writeObject(success);
-            oout.flush();
-        } catch (SQLException e) {
-            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
-            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+                oout.writeObject(success);
+                oout.flush();
+
+                incrementDBVersion(success);
+            } catch (SQLException e) {
+                System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+                serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+            }
         }
     }
 
@@ -282,36 +314,46 @@ public class ServerThread extends Thread {
     }
 
     private void insertAttendance(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
-        Attendance newAttendance = (Attendance) oin.readObject();
+        synchronized (lock) {
+            Attendance newAttendance = (Attendance) oin.readObject();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
-            System.out.println("[ServerThread] Connection Established to " + dbUrl);
-            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+                System.out.println("[ServerThread] Connection Established to " + dbUrl);
+                serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
 
-            boolean success = EventManagerDB.insertAttendanceEvent(conn, newAttendance.getEventId(), newAttendance.getUsername(), serverController);
+                boolean success = EventManagerDB.insertAttendanceEvent(conn, newAttendance.getEventId(), newAttendance.getUsername(), serverController);
 
-            oout.writeObject(success);
-            oout.flush();
-        } catch (SQLException e) {
-            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
-            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+                oout.writeObject(success);
+                oout.flush();
+
+                incrementDBVersion(success);
+                sendEmail(success, newAttendance.getUsername(), "Attendence Inserted", "Attendence for " + newAttendance.getEventId() + " Inserted");
+            } catch (SQLException e) {
+                System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+                serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+            }
         }
     }
 
     private void deleteAttendance(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
-        Attendance newAttendance = (Attendance) oin.readObject();
+        synchronized (lock) {
+            Attendance newAttendance = (Attendance) oin.readObject();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
-            System.out.println("[ServerThread] Connection Established to " + dbUrl);
-            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+                System.out.println("[ServerThread] Connection Established to " + dbUrl);
+                serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
 
-            boolean success = EventManagerDB.deletePresenceFromEvent(conn, newAttendance.getEventId(), newAttendance.getUsername(), serverController);
+                boolean success = EventManagerDB.deletePresenceFromEvent(conn, newAttendance.getEventId(), newAttendance.getUsername(), serverController);
 
-            oout.writeObject(success);
-            oout.flush();
-        } catch (SQLException e) {
-            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
-            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+                oout.writeObject(success);
+                oout.flush();
+
+                incrementDBVersion(success);
+                sendEmail(success, newAttendance.getUsername(), "Attendence Deleted", "Attendence from " + newAttendance.getEventId() + " Deleted");
+            } catch (SQLException e) {
+                System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+                serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+            }
         }
     }
 
@@ -334,24 +376,29 @@ public class ServerThread extends Thread {
     }
 
     private void insertEventKey(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
-        EventKey eventKey = (EventKey) oin.readObject();
+        synchronized (lock) {
+            EventKey eventKey = (EventKey) oin.readObject();
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
-            System.out.println("[ServerThread] Connection Established to " + dbUrl);
-            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+                System.out.println("[ServerThread] Connection Established to " + dbUrl);
+                serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
 
-            boolean insertSuccess = EventManagerDB.insertEventKey(conn, eventKey, serverController);
+                boolean success = EventManagerDB.insertEventKey(conn, eventKey, serverController);
 
-            oout.writeObject(insertSuccess);
-            oout.flush();
-        } catch (SQLException e) {
-            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
-            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+                oout.writeObject(success);
+                oout.flush();
+
+                incrementDBVersion(success);
+            } catch (SQLException e) {
+                System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+                serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+            }
         }
     }
 
     //USER KEY
     private void insertUserKey(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
+        //TODO: partir isto, está a ficar gigante...
         UserKey userKey = (UserKey) oin.readObject();
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
@@ -366,14 +413,133 @@ public class ServerThread extends Thread {
                 oout.writeObject(false);
                 oout.flush();
             } else {
-                boolean success = EventManagerDB.insertPresenceForEvent(conn, eventId, userKey.getUsername(), serverController);
+                // Verificar se a data atual está entre start_date e end_date do evento
+                Date currentDate = new Date();
+                Event event = EventManagerDB.getEvent(conn, eventId, serverController);
+                Date eventDate = event.getDate();
+                String startTime = event.getStartTime();
+                String endTime = event.getEndTime();
 
-                oout.writeObject(success);
-                oout.flush();
+                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+
+                Calendar startDate;
+                Calendar endDate;
+
+                try {
+                    Date startDateTime = timeFormat.parse(startTime);
+                    Date endDateTime = timeFormat.parse(endTime);
+
+                    startDate = Calendar.getInstance();
+                    startDate.setTime(eventDate);
+                    startDate.set(Calendar.HOUR_OF_DAY, startDateTime.getHours());
+                    startDate.set(Calendar.MINUTE, startDateTime.getMinutes());
+                    startDate.set(Calendar.SECOND, 0);
+
+                    endDate = Calendar.getInstance();
+                    endDate.setTime(eventDate);
+                    endDate.set(Calendar.HOUR_OF_DAY, endDateTime.getHours());
+                    endDate.set(Calendar.MINUTE, endDateTime.getMinutes());
+                    endDate.set(Calendar.SECOND, 0);
+                } catch (ParseException e) {
+                    System.err.println("[ServerThread] Insert User Key Error: " + e.getMessage());
+                    serverController.addToConsole("[ServerThread] Insert User Key Error: " + e.getMessage());
+                    oout.writeObject(false);
+                    oout.flush();
+                    return;
+                }
+
+                if (currentDate.after(startDate.getTime()) && currentDate.before(endDate.getTime())) {
+                    // Verificar se a data atual é antes da end_date do codigo_registo com o code = userKey.getUserKey()
+                    EventKey eventKey = CodigoRegistoModel.getEventKey(conn, eventId, serverController);
+                    assert eventKey != null;
+                    Date eventKeyEndDate = eventKey.getEndDate();
+
+                    if (currentDate.before(eventKeyEndDate)) {
+                        synchronized (lock) {
+                            boolean success = EventManagerDB.insertPresenceForEvent(conn, eventId, userKey.getUsername(), serverController);
+
+                            oout.writeObject(success);
+                            oout.flush();
+
+                            incrementDBVersion(success);
+                            sendEmail(success, userKey.getUsername(), "Attendence Inserted", "Attendence for " + eventId + " Inserted");
+                        }
+                    } else {
+                        System.err.println("[ServerThread] Insert User Key Error: Current date is after the event key end date");
+                        serverController.addToConsole("[ServerThread] Insert User Key Error: Current date is after the event key end date");
+                        oout.writeObject(false);
+                        oout.flush();
+                    }
+                } else {
+                    System.err.println("[ServerThread] Insert User Key Error: Current date is not within the event date range");
+                    serverController.addToConsole("[ServerThread] Insert User Key Error: Current date is not within the event date range");
+                    oout.writeObject(false);
+                    oout.flush();
+                }
             }
         } catch (SQLException e) {
             System.err.println("[ServerThread] Connection Error: " + e.getMessage());
             serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
         }
     }
+
+    //EMAIL - TODO: o google não deixa a conta ter acesso a ligações menos seguras...
+    public void sendEmail(boolean send, String recipientEmail, String subject, String body) {
+        if (!send) return;
+
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+
+        // Criação de uma sessão de e-mail com autenticação
+        Session session = Session.getInstance(props, new Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(Constants.ADMIN_EMAIL, Constants.ADMIN_EMAIL_PASSWORD);
+            }
+        });
+
+        try {
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(Constants.ADMIN_EMAIL)); // Remetente
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail)); // Destinatário
+            message.setSubject(subject); // Assunto do e-mail
+            message.setText(body); // Corpo do e-mail
+
+            Transport.send(message); // Envio do e-mail
+
+            System.out.println("E-mail enviado com sucesso para: " + recipientEmail);
+            serverController.addToConsole("E-mail enviado com sucesso para: " + recipientEmail);
+        } catch (MessagingException e) {
+            System.out.println("Erro ao enviar e-mail: " + e.getMessage());
+            serverController.addToConsole("Erro ao enviar e-mail: " + e.getMessage());
+        }
+    }
+
+    //DB
+    private void incrementDBVersion(boolean increment) {
+        if (!increment) return;
+
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
+            System.out.println("[ServerThread] Connection Established to " + dbUrl);
+            serverController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
+
+            int newDBVersion = EventManagerDB.incrementDBVersion(conn, serverController);
+
+            if (newDBVersion > 0) {
+                System.out.println("[ServerThread] DBVersion Increment Success");
+                serverController.addToConsole("[ServerThread] DBVersion Increment Success");
+                server.incrementDbVersion(newDBVersion);
+            } else {
+                System.out.println("[ServerThread] DBVersion Increment Error");
+                serverController.addToConsole("[ServerThread] DBVersion Increment Error");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("[ServerThread] Connection Error: " + e.getMessage());
+            serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
+        }
+    }
+
 }

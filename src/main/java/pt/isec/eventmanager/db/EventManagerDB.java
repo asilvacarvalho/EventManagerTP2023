@@ -6,14 +6,11 @@ import pt.isec.eventmanager.events.EventKey;
 import pt.isec.eventmanager.server.ServerController;
 import pt.isec.eventmanager.users.User;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
-//TODO: talvez não seja aqui, mas sempre que efetuamos uma operaçao na BD temos que avisar o client
+//TODO: avisar os servidores de backup das atualizações
 
 public class EventManagerDB {
     //TABLE CREATION
@@ -64,6 +61,19 @@ public class EventManagerDB {
                             ")"
             );
 
+            // Criar tabela db_version para controlar a versão do banco de dados
+            conn.createStatement().executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS db_version (" +
+                            "   id          INTEGER PRIMARY KEY AUTOINCREMENT," +
+                            "   dbversion   INT" +
+                            ")"
+            );
+
+            // Inserir a versão inicial (0) na tabela db_version
+            conn.createStatement().executeUpdate(
+                    "INSERT INTO db_version (dbversion) VALUES (0)"
+            );
+
             System.out.println("[EventManagerDB] Tables created successfully.");
             controller.addToConsole("[EventManagerDB] Tables created successfully.");
         } catch (SQLException e) {
@@ -98,6 +108,33 @@ public class EventManagerDB {
             System.err.println("[EventManagerDB] SQL Exception in createAdmin: " + e.getMessage());
             controller.addToConsole("[EventManagerDB] SQL Exception in createAdmin: " + e.getMessage());
         }
+    }
+
+    public static int getDBVersion(Connection conn, ServerController controller) {
+        int dbVersion = -1; // Valor padrão caso não seja possível recuperar a versão do banco de dados
+
+        try {
+            String query = "SELECT dbversion FROM db_version";
+            PreparedStatement preparedStatement = conn.prepareStatement(query);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                dbVersion = resultSet.getInt("dbversion");
+                System.out.println("[EventManagerDB] Current database version: " + dbVersion);
+                controller.addToConsole("[EventManagerDB] Current database version: " + dbVersion);
+            } else {
+                System.err.println("[EventManagerDB] No rows found in db_version table.");
+                controller.addToConsole("[EventManagerDB] No rows found in db_version table.");
+            }
+
+            resultSet.close();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            System.err.println("[EventManagerDB] SQL Exception in getDBVersion: " + e.getMessage());
+            controller.addToConsole("[EventManagerDB] SQL Exception in getDBVersion: " + e.getMessage());
+        }
+
+        return dbVersion;
     }
 
     public static void createDummyData(Connection conn, ServerController controller) {
@@ -161,6 +198,34 @@ public class EventManagerDB {
         }
     }
 
+    public static int incrementDBVersion(Connection conn, ServerController controller) {
+        try {
+            int currentVersion = getDBVersion(conn, controller);
+            int newVersion = currentVersion + 1;
+
+            String updateQuery = "UPDATE db_version SET dbversion = ?";
+            PreparedStatement preparedStatement = conn.prepareStatement(updateQuery);
+            preparedStatement.setInt(1, newVersion);
+            int rowsAffected = preparedStatement.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("[EventManagerDB] Database version incremented to: " + newVersion);
+                controller.addToConsole("[EventManagerDB] Database version incremented to: " + newVersion);
+            } else {
+                System.err.println("[EventManagerDB] Failed to increment database version.");
+                controller.addToConsole("[EventManagerDB] Failed to increment database version.");
+                return -1;
+            }
+
+            preparedStatement.close();
+            return newVersion;
+        } catch (SQLException e) {
+            System.err.println("[EventManagerDB] SQL Exception in incrementDBVersion: " + e.getMessage());
+            controller.addToConsole("[EventManagerDB] SQL Exception in incrementDBVersion: " + e.getMessage());
+            return -1;
+        }
+    }
+
     //UTILIZADOR
     public static User authenticateUser(Connection conn, User user, ServerController controller) {
         return UtilizadorModel.authenticateUser(conn, user, controller);
@@ -212,7 +277,6 @@ public class EventManagerDB {
     }
 
     public static boolean insertAttendanceEvent(Connection conn, int eventId, String username, ServerController controller) {
-        //TODO: avisar o utilizador por email (username)
         return EventoUtilizadorModel.insertPresenceForEvent(conn, eventId, username, controller);
     }
 
@@ -231,13 +295,10 @@ public class EventManagerDB {
 
     //EVENTO_UTILIZADOR
     public static boolean insertPresenceForEvent(Connection conn, int eventId, String username, ServerController controller) {
-        //TODO: avisar o utilizador por email (username)
         return EventoUtilizadorModel.insertUserPresenceForEvent(conn, eventId, username, controller);
     }
 
     public static boolean deletePresenceFromEvent(Connection conn, int eventId, String username, ServerController controller) {
-        //TODO: avisar o utilizador por email (username)
-
         return EventoUtilizadorModel.deletePresenceFromEvent(conn, eventId, username, controller);
     }
 }

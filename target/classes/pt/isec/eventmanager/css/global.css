@@ -7,9 +7,19 @@
     -fx-prompt-text-fill: #00CDCD;
 }
 
+.server .label {
+    -fx-text-fill: #00CDCD;
+    -fx-font-size: 14px;
+}
+
+.server .text-field {
+    -fx-text-fill: #00CDCD;
+    -fx-prompt-text-fill: #00CDCD;
+}
+
 .mainBorderPane .label {
     -fx-text-fill: #00CDCD;
-    -fx-font-size: 18px;
+    -fx-font-size: 16px;
 }
 
 .errorLabel {

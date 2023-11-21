@@ -4,15 +4,32 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
-<AnchorPane prefHeight="800.0" prefWidth="800.0" stylesheets="@../css/global.css"
-            xmlns="http://javafx.com/javafx/18.0.2"
-            xmlns:fx="http://javafx.com/fxml/1" fx:controller="pt.isec.eventmanager.server.ServerController">
+<AnchorPane prefHeight="800.0" prefWidth="800.0" styleClass="server" stylesheets="@../css/global.css"
+            xmlns="http://javafx.com/javafx/18.0.2" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="pt.isec.eventmanager.server.ServerController">
     <VBox alignment="CENTER" prefHeight="800.0" prefWidth="800.0" spacing="10.0" AnchorPane.bottomAnchor="0.0"
           AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-        <TextField fx:id="clientTcpPortField" promptText="TCP Port for Clients Connections"/>
-        <TextField fx:id="regPortField" promptText="Local Registry Port"/>
-        <TextField fx:id="dbLocationField" promptText="Database Location"/>
-        <TextField fx:id="rmiBackupServiceNameField" promptText="RMI Backup Service Name"/>
+        <HBox alignment="TOP_CENTER">
+            <VBox spacing="15.0">
+                <VBox>
+                    <Label text="TCP Port for Clients Connections"/>
+                    <TextField fx:id="clientTcpPortField" prefHeight="30.0" prefWidth="370.0"/>
+                </VBox>
+                <VBox>
+                    <Label text="Local Registry Port"/>
+                    <TextField fx:id="regPortField" prefHeight="30.0" prefWidth="370.0"/>
+                </VBox>
+                <VBox>
+                    <Label text="Database Location"/>
+                    <TextField fx:id="dbLocationField" prefHeight="30.0" prefWidth="370.0"/>
+                </VBox>
+                <VBox>
+                    <Label text="RMI Backup Service Name"/>
+                    <TextField fx:id="rmiBackupServiceNameField" prefHeight="30.0" prefWidth="370.0"/>
+                </VBox>
+            </VBox>
+        </HBox>
+
         <Button fx:id="startButton" mnemonicParsing="false" onAction="#handleStartButtonAction" text="Start"/>
         <TextArea fx:id="consoleTextArea" editable="false" prefHeight="400.0" prefWidth="400.0" wrapText="true"/>
         <Label fx:id="errorLabel" textFill="red" visible="false">

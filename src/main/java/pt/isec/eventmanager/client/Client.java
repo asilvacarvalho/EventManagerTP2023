@@ -43,7 +43,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             this.serverAddress = serverAddress;
             this.serverPort = serverPort;
@@ -62,7 +62,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             // Enviar o tipo de operação
             oout.writeObject(Constants.AUTHENTICATION_REQUEST);
@@ -100,7 +100,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             // Enviar o tipo de operação
             oout.writeObject(Constants.INSERTUSER_REQUEST);
@@ -132,7 +132,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             // Enviar o tipo de operação
             oout.writeObject(Constants.EDITUSER_REQUEST);
@@ -166,7 +166,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.LISTUSEREVENTS_REQUEST);
             oout.flush();
@@ -196,7 +196,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.INSERTEVENT_REQUEST);
             oout.flush();
@@ -227,7 +227,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.LISTEVENTS_REQUEST);
             oout.flush();
@@ -250,7 +250,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.EDITEVENT_REQUEST);
             oout.flush();
@@ -280,7 +280,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.DELETEEVENT_REQUEST);
             oout.flush();
@@ -310,7 +310,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.EVENTHASATTENDENCES_REQUEST);
             oout.flush();
@@ -340,7 +340,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             // Enviar o tipo de operação
             oout.writeObject(Constants.LISTATTENDENCES_REQUEST);
@@ -367,7 +367,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.ADDATTENDENCE_REQUEST);
             oout.flush();
@@ -397,7 +397,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.DELETEATTENDENCE_REQUEST);
             oout.flush();
@@ -428,7 +428,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.GETEVENTKEY_REQUEST);
             oout.flush();
@@ -453,7 +453,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.GENERATEEVENTKEY_REQUEST);
             oout.flush();
@@ -485,7 +485,7 @@ public class Client {
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
 
-            socket.setSoTimeout(Constants.TIMEOUT * 1000);
+            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             oout.writeObject(Constants.INSERTUSERKEY_REQUEST);
             oout.flush();
