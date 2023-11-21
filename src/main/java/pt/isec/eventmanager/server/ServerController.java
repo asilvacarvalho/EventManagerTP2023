@@ -1,5 +1,6 @@
 package pt.isec.eventmanager.server;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -25,8 +26,9 @@ public class ServerController {
     @FXML
     private Label errorLabel;
 
-
     private Server server;
+    private Thread serverThread;
+    private boolean started = false;
 
 
     @FXML
@@ -38,38 +40,54 @@ public class ServerController {
         rmiBackupServiceNameField.setText("eventmanagerbackup");
     }
 
-    public void initServerController(Server server) {
-        this.server = server;
-    }
-
     @FXML
     private void handleStartButtonAction() {
         hideError();
 
+        if (!started) {
+            addToConsole("Starting server");
+            startServer();
+            startButton.setText("Stop");
+            started = true;
+        } else {
+            Platform.exit();
+        }
+    }
+
+    public void startServer() {
         String clientTcpPort = clientTcpPortField.getText().trim();
-        String regPort = regPortField.getText().trim();
         String dbLocation = dbLocationField.getText().trim();
+
+        String regPortText = regPortField.getText().trim();
         String rmiBackupServiceName = rmiBackupServiceNameField.getText().trim();
 
-        if (clientTcpPort.isEmpty() || regPort.isEmpty() || dbLocation.isEmpty() || rmiBackupServiceName.isEmpty()) {
+        if (clientTcpPort.isEmpty() || regPortText.isEmpty() || dbLocation.isEmpty() || rmiBackupServiceName.isEmpty()) {
             System.out.println("[ServerController] Information missing to start de server!");
             showError("Information missing to start de server!");
+            started = false;
             return;
         }
 
-        Runnable runnable = () -> {
-            server.initServer(clientTcpPort, dbLocation, this);
-        };
+        this.server = new Server();
 
-        Thread thread = new Thread(runnable);
-        thread.setDaemon(true);
-        thread.start();
+        try {
+            int regPort = Integer.parseInt(regPortText);
+            Runnable runnable = () -> server.initServer(clientTcpPort, dbLocation, regPort, rmiBackupServiceName, this);
+
+            serverThread = new Thread(runnable);
+            serverThread.setDaemon(true);
+            serverThread.start();
+        } catch (NumberFormatException e) {
+            System.out.println("[ServerController] Error parsing reg port");
+            showError("[ServerController] Error parsing reg port");
+        }
     }
 
     public void addToConsole(String message) {
         SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         Date date = new Date();
-        consoleTextArea.appendText(formatter.format(date) + " - " + message + "\n");
+
+        Platform.runLater(() -> consoleTextArea.appendText(formatter.format(date) + " - " + message + "\n"));
     }
 
     private void showError(String msg) {

@@ -22,6 +22,8 @@ import java.util.List;
 
 public class ListUserEventsController {
     @FXML
+    public TextField searchField;
+    @FXML
     public HBox userHBox;
     @FXML
     public TextField userField;
@@ -32,6 +34,8 @@ public class ListUserEventsController {
 
     private Client client;
     private ClientAuthenticatedController parentController;
+
+    private ArrayList<Event> listEvents;
 
     @FXML
     public void initialize() {
@@ -96,9 +100,40 @@ public class ListUserEventsController {
         thread.start();
     }
 
+    @FXML
+    public void handleSearchButtonAction() {
+        String searchText = searchField.getText().trim();
+
+        if (!searchText.isEmpty()) {
+            ArrayList<Event> filteredEvents = new ArrayList<>();
+
+            for (Event event : eventTableView.getItems()) {
+                if (event.getName().toLowerCase().contains(searchText.toLowerCase()) ||
+                        event.getLocation().toLowerCase().contains(searchText.toLowerCase()) ||
+                        event.getDate().toString().contains(searchText)) {
+                    filteredEvents.add(event);
+                }
+            }
+
+            eventTableView.getItems().clear();
+            eventTableView.getItems().addAll(filteredEvents);
+        } else {
+            eventTableView.getItems().clear();
+            eventTableView.getItems().addAll(listEvents);
+        }
+    }
+
+    @FXML
+    public void handleClearButtonAction() {
+        searchField.setText("");
+        eventTableView.getItems().clear();
+        eventTableView.getItems().addAll(listEvents);
+    }
+
     public void initListUserEventsController(ArrayList<Event> listEvents, ClientAuthenticatedController controller, boolean admin, Client client) {
         this.client = client;
         this.parentController = controller;
+        this.listEvents = listEvents;
         eventTableView.getItems().addAll(listEvents);
 
         if (admin)

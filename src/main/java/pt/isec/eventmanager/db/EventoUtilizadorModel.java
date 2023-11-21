@@ -54,11 +54,7 @@ public class EventoUtilizadorModel {
 
 
     public static boolean insertUserPresenceForEvent(Connection conn, int eventId, String username, ServerController controller) {
-        //TODO: Se for feito fora do período de validade do código ou de realização do evento, a operação
-        // falha. O mesmo ocorre se um utilizador introduzir um código relativo a um
-        // determinado evento e já possuir presença registada noutro evento a decorrer naquele momemto
-        // Fazer um if aqui....
-
+        //Dois métodos iguais apenas por uma questão de eligibilidate, este vem sempre do user o outro vem do admin
         return insertPresenceForEvent(conn, eventId, username, controller);
     }
 
