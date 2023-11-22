@@ -13,6 +13,7 @@ module pt.isec.eventmanager {
     exports pt.isec.eventmanager.util;
     exports pt.isec.eventmanager.heartBeat;
     exports pt.isec.eventmanager.serverBackup;
+    exports pt.isec.eventmanager.rmi;
 
     opens pt.isec.eventmanager to javafx.fxml;
     opens pt.isec.eventmanager.events to javafx.fxml;
@@ -22,4 +23,5 @@ module pt.isec.eventmanager {
     opens pt.isec.eventmanager.util to javafx.fxml;
     opens pt.isec.eventmanager.heartBeat to javafx.fxml;
     opens pt.isec.eventmanager.serverBackup to javafx.fxml;
+    opens pt.isec.eventmanager.rmi to javafx.fxml;
 }

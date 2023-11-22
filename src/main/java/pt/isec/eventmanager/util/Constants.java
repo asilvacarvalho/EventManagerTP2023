@@ -12,6 +12,8 @@ public class Constants implements Serializable {
     public static final int HEARTBEAT_BACKUP_TIMEOUT = 30;
     public static final int HEARTBEAT_MAX_SIZE = 10000;
 
+    public static final String DB_FILE_NAME = "eventmanagerdb.sqlite";
+
     //BACKUP
     public static final int HEARTBEAT_PORT = 4444;
     public static final String HEARTBEAT_URL = "230.44.44.44";

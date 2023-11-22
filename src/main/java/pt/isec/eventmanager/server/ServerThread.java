@@ -398,7 +398,6 @@ public class ServerThread extends Thread {
 
     //USER KEY
     private void insertUserKey(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws Exception {
-        //TODO: partir isto, está a ficar gigante...
         UserKey userKey = (UserKey) oin.readObject();
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl)) {
@@ -420,38 +419,26 @@ public class ServerThread extends Thread {
                 String startTime = event.getStartTime();
                 String endTime = event.getEndTime();
 
-                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+                Calendar startDate = fillEventDateTime(eventDate, startTime);
+                Calendar endDate = fillEventDateTime(eventDate, endTime);
 
-                Calendar startDate;
-                Calendar endDate;
-
-                try {
-                    Date startDateTime = timeFormat.parse(startTime);
-                    Date endDateTime = timeFormat.parse(endTime);
-
-                    startDate = Calendar.getInstance();
-                    startDate.setTime(eventDate);
-                    startDate.set(Calendar.HOUR_OF_DAY, startDateTime.getHours());
-                    startDate.set(Calendar.MINUTE, startDateTime.getMinutes());
-                    startDate.set(Calendar.SECOND, 0);
-
-                    endDate = Calendar.getInstance();
-                    endDate.setTime(eventDate);
-                    endDate.set(Calendar.HOUR_OF_DAY, endDateTime.getHours());
-                    endDate.set(Calendar.MINUTE, endDateTime.getMinutes());
-                    endDate.set(Calendar.SECOND, 0);
-                } catch (ParseException e) {
-                    System.err.println("[ServerThread] Insert User Key Error: " + e.getMessage());
-                    serverController.addToConsole("[ServerThread] Insert User Key Error: " + e.getMessage());
+                if (startDate == null || endDate == null) {
+                    System.err.println("[ServerThread] Insert User Key Error");
+                    serverController.addToConsole("[ServerThread] Insert User Key Error");
                     oout.writeObject(false);
                     oout.flush();
                     return;
                 }
 
                 if (currentDate.after(startDate.getTime()) && currentDate.before(endDate.getTime())) {
-                    // Verificar se a data atual é antes da end_date do codigo_registo com o code = userKey.getUserKey()
                     EventKey eventKey = CodigoRegistoModel.getEventKey(conn, eventId, serverController);
-                    assert eventKey != null;
+                    if (eventKey == null) {
+                        System.err.println("[ServerThread] Insert User Key Error");
+                        serverController.addToConsole("[ServerThread] Insert User Key Error");
+                        oout.writeObject(false);
+                        oout.flush();
+                        return;
+                    }
                     Date eventKeyEndDate = eventKey.getEndDate();
 
                     if (currentDate.before(eventKeyEndDate)) {
@@ -481,6 +468,29 @@ public class ServerThread extends Thread {
             System.err.println("[ServerThread] Connection Error: " + e.getMessage());
             serverController.addToConsole("[ServerThread] Connection Error: " + e.getMessage());
         }
+    }
+
+    private Calendar fillEventDateTime(Date eventDate, String time) {
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+        Date startDateTime;
+        try {
+            startDateTime = timeFormat.parse(time);
+        } catch (ParseException e) {
+            System.err.println("[ServerThread] Error Filling Event Date: " + e.getMessage());
+            serverController.addToConsole("[ServerThread] Error Filling Event Date: " + e.getMessage());
+            return null;
+        }
+
+        Calendar startTimeC = Calendar.getInstance();
+        startTimeC.setTime(startDateTime);
+
+        Calendar eventDateTime = Calendar.getInstance();
+        eventDateTime.setTime(eventDate);
+        eventDateTime.set(Calendar.HOUR_OF_DAY, startTimeC.get(Calendar.HOUR_OF_DAY));
+        eventDateTime.set(Calendar.MINUTE, startTimeC.get(Calendar.MINUTE));
+        eventDateTime.set(Calendar.SECOND, 0);
+
+        return eventDateTime;
     }
 
     //EMAIL - TODO: o google não deixa a conta ter acesso a ligações menos seguras...

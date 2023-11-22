@@ -35,8 +35,8 @@ public class ServerController {
     private void initialize() {
         //TODO: Remove after testing
         clientTcpPortField.setText("6000");
-        regPortField.setText("5000");
-        dbLocationField.setText("./DB/eventmanagerdb.sqlite");
+        regPortField.setText("1099");
+        dbLocationField.setText("./DB");
         rmiBackupServiceNameField.setText("eventmanagerbackup");
     }
 
@@ -50,6 +50,7 @@ public class ServerController {
             startButton.setText("Stop");
             started = true;
         } else {
+            if (server != null) server.stopRMIService();
             Platform.exit();
         }
     }
@@ -98,5 +99,10 @@ public class ServerController {
     private void hideError() {
         errorLabel.setVisible(false);
         errorLabel.setText("");
+    }
+
+    public void stopRMIService() {
+        if (server != null)
+            server.stopRMIService();
     }
 }
