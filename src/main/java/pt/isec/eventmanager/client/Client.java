@@ -335,6 +335,7 @@ public class Client {
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     public ArrayList<Attendance> listAttendences(int eventId) {
         try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
              ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());

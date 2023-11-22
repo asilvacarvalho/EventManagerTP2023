@@ -1,6 +1,7 @@
 package pt.isec.eventmanager.heartBeat;
 
 import javafx.application.Platform;
+import pt.isec.eventmanager.serverBackup.ServerBackup;
 import pt.isec.eventmanager.serverBackup.ServerBackupController;
 import pt.isec.eventmanager.util.Constants;
 
@@ -14,11 +15,13 @@ import java.net.SocketTimeoutException;
 public class HeartBeatThread extends Thread {
     private MulticastSocket multicastSocket;
     private ServerBackupController controller;
+    private ServerBackup serverBackup;
     private boolean running;
 
-    public HeartBeatThread(MulticastSocket multicastSocket, ServerBackupController controller) {
+    public HeartBeatThread(MulticastSocket multicastSocket, ServerBackupController controller, ServerBackup serverBackup) {
         this.multicastSocket = multicastSocket;
         this.controller = controller;
+        this.serverBackup = serverBackup;
         running = true;
     }
 
@@ -44,8 +47,8 @@ public class HeartBeatThread extends Thread {
 
                     if (returnedObject instanceof HeartBeatMsg) {
                         msg = (HeartBeatMsg) returnedObject;
+                        serverBackup.setHearBeatMsg(msg);
                         System.out.println("[HeartBeatThread] Msg de " + datagramPacket.getAddress() + ":" + datagramPacket.getPort());
-                        System.out.println("[HeartBeatThread] ServerRMIServiceName: " + msg.getServerRMIServiceName());
                         controller.addToConsole("[HeartBeatThread] Msg de " + datagramPacket.getAddress() + ":" + datagramPacket.getPort());
                     }
 

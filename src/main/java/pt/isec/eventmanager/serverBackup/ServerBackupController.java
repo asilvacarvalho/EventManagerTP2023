@@ -41,7 +41,7 @@ public class ServerBackupController {
                 addToConsole("Server Backup started");
                 started = true;
                 startButton.setText("Stop");
-                this.serverBackup = new ServerBackup();
+                this.serverBackup = new ServerBackup(dbLocationField.getText());
                 serverBackup.startHeartBeatLookup(this);
             }
         } else {
