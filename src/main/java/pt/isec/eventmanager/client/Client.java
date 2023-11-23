@@ -19,10 +19,6 @@ public class Client {
     private String serverAddress;
     private String serverPort;
 
-    private Socket socket;
-    ObjectInputStream oin;
-    ObjectOutputStream oout;
-
     public Client() {
     }
 
@@ -39,20 +35,14 @@ public class Client {
     }
 
     public String connect(String serverAddress, String serverPort) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
-
+        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort))) {
             socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
             this.serverAddress = serverAddress;
             this.serverPort = serverPort;
-            this.socket = socket;
-            this.oin = oin;
-            this.oout = oout;
             return null;
         } catch (Exception e) {
-            return "Ocorreu um erro no acesso ao socket:\n\t" + e.getMessage();
+            return "[Client] Ocorreu um erro no acesso ao socket:\n\t" + e.getMessage();
         }
     }
 
@@ -295,12 +285,13 @@ public class Client {
                     return true;
                 }
             } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
+                System.out.println("[Client] deleteEvent Socket timeout");
                 return false;
             }
 
         } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            System.out.println("[Client] Erro during deleteEvent: " + e);
+            return false;
         }
         return false;
     }

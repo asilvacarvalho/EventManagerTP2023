@@ -17,7 +17,7 @@ public class MainServer extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(MainClient.class.getResource("fxml/server.fxml"));
 
 
-        Scene scene = new Scene(fxmlLoader.load(), 800, 800);
+        Scene scene = new Scene(fxmlLoader.load(), 1000, 800);
         stage.setTitle("EventManager Server");
         stage.setResizable(false);
         stage.setScene(scene);
@@ -28,9 +28,7 @@ public class MainServer extends Application {
         });
 
         stage.setOnCloseRequest(event -> {
-            if (serverController != null) {
-                serverController.stopRMIService();
-            }
+            serverController.stopServer();
         });
     }
 

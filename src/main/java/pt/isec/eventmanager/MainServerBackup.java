@@ -20,7 +20,7 @@ public class MainServerBackup extends Application {
             serverController.initServerBackupController();
         });
 
-        Scene scene = new Scene(fxmlLoader.load(), 800, 800);
+        Scene scene = new Scene(fxmlLoader.load(), 1000, 800);
         stage.setTitle("EventManager Server Backup");
         stage.setResizable(false);
         stage.setScene(scene);

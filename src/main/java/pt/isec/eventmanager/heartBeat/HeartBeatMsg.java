@@ -2,6 +2,7 @@ package pt.isec.eventmanager.heartBeat;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.net.InetAddress;
 
 public class HeartBeatMsg implements Serializable {
     @Serial
@@ -10,11 +11,13 @@ public class HeartBeatMsg implements Serializable {
     private int registryPort;
     private String serverRMIServiceName;
     private int dbVersion;
+    private InetAddress ipAddress;
 
-    public HeartBeatMsg(int registryPort, String serverRMIServiceName, int dbVersion) {
+    public HeartBeatMsg(int registryPort, String serverRMIServiceName, int dbVersion, InetAddress ipAddress) {
         this.registryPort = registryPort;
         this.serverRMIServiceName = serverRMIServiceName;
         this.dbVersion = dbVersion;
+        this.ipAddress = ipAddress;
     }
 
     public int getRegistryPort() {
@@ -39,5 +42,13 @@ public class HeartBeatMsg implements Serializable {
 
     public void setDbVersion(int dbVersion) {
         this.dbVersion = dbVersion;
+    }
+
+    public InetAddress getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(InetAddress ipAddress) {
+        this.ipAddress = ipAddress;
     }
 }

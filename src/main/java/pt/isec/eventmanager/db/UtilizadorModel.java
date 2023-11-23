@@ -1,6 +1,5 @@
 package pt.isec.eventmanager.db;
 
-import pt.isec.eventmanager.server.ServerController;
 import pt.isec.eventmanager.users.User;
 
 import java.sql.Connection;
@@ -9,117 +8,70 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class UtilizadorModel {
-    public static User authenticateUser(Connection conn, User user, ServerController controller) {
+    public static User authenticateUser(Connection conn, User user) throws SQLException {
         String query = "SELECT * FROM utilizador WHERE email=? AND password=?";
-        try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
-            preparedStatement.setString(1, user.getEmail());
-            preparedStatement.setString(2, user.getPassword());
+        PreparedStatement preparedStatement = conn.prepareStatement(query);
+        preparedStatement.setString(1, user.getEmail());
+        preparedStatement.setString(2, user.getPassword());
 
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                return new User(
-                        resultSet.getString("email"),
-                        resultSet.getString("password"),
-                        resultSet.getString("name"),
-                        resultSet.getString("student_number"),
-                        resultSet.getBoolean("admin")
-                );
-            }
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error in authenticateUser: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error in authenticateUser: " + e.getMessage());
+        ResultSet resultSet = preparedStatement.executeQuery();
+        if (resultSet.next()) {
+            return new User(
+                    resultSet.getString("email"),
+                    resultSet.getString("password"),
+                    resultSet.getString("name"),
+                    resultSet.getString("student_number"),
+                    resultSet.getBoolean("admin")
+            );
         }
         return null;
     }
 
-    public static User getUser(Connection conn, String username, ServerController controller) {
+    public static User getUser(Connection conn, String username) throws SQLException {
         String query = "SELECT * FROM utilizador WHERE email=?";
-        try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
-            preparedStatement.setString(1, username);
+        PreparedStatement preparedStatement = conn.prepareStatement(query);
+        preparedStatement.setString(1, username);
 
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                return new User(
-                        resultSet.getString("email"),
-                        resultSet.getString("password"),
-                        resultSet.getString("name"),
-                        resultSet.getString("student_number"),
-                        resultSet.getBoolean("admin")
-                );
-            }
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error getting User: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error getting User: " + e.getMessage());
+        ResultSet resultSet = preparedStatement.executeQuery();
+        if (resultSet.next()) {
+            return new User(
+                    resultSet.getString("email"),
+                    resultSet.getString("password"),
+                    resultSet.getString("name"),
+                    resultSet.getString("student_number"),
+                    resultSet.getBoolean("admin")
+            );
         }
+
         return null;
     }
 
-    public static boolean insertUser(Connection conn, User user, ServerController controller) {
-        String queryCheckEmail = "SELECT COUNT(*) FROM utilizador WHERE email = ?";
+    public static boolean insertUser(Connection conn, User user) throws SQLException {
         String queryInsertUser = "INSERT INTO utilizador (email, password, name, student_number, admin) VALUES (?, ?, ?, ?, ?)";
 
-        try (PreparedStatement checkEmailStatement = conn.prepareStatement(queryCheckEmail);
-             PreparedStatement insertUserStatement = conn.prepareStatement(queryInsertUser)) {
+        PreparedStatement insertUserStatement = conn.prepareStatement(queryInsertUser);
+        insertUserStatement.setString(1, user.getEmail());
+        insertUserStatement.setString(2, user.getPassword());
+        insertUserStatement.setString(3, user.getName());
+        insertUserStatement.setString(4, user.getStudentNumber());
+        insertUserStatement.setBoolean(5, false);
 
-            // Verifica se o email já existe na tabela
-            checkEmailStatement.setString(1, user.getEmail());
-            ResultSet resultSet = checkEmailStatement.executeQuery();
-            if (resultSet.getInt(1) > 0) {
-                System.err.println("[EventManagerDB] Error inserting user, email already exists");
-                controller.addToConsole("[EventManagerDB] Error inserting user, email already exists");
-                return false;
-            }
+        int rowsAffected = insertUserStatement.executeUpdate();
 
-            insertUserStatement.setString(1, user.getEmail());
-            insertUserStatement.setString(2, user.getPassword());
-            insertUserStatement.setString(3, user.getName());
-            insertUserStatement.setString(4, user.getStudentNumber());
-            insertUserStatement.setBoolean(5, false);
-
-            int rowsAffected = insertUserStatement.executeUpdate();
-
-            if (rowsAffected > 0) {
-                return true;
-            }
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error inserting user: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error inserting user: " + e.getMessage());
-        }
-
-        return false;
+        return rowsAffected > 0;
     }
 
-    public static boolean editUser(Connection conn, User user, ServerController controller) {
-        String queryCheckEmail = "SELECT COUNT(*) FROM utilizador WHERE email = ?";
+    public static boolean editUser(Connection conn, User user) throws SQLException {
         String queryUpdateUser = "UPDATE utilizador SET password = ?, name = ?, student_number = ? WHERE email = ?";
 
-        try (PreparedStatement checkEmailStatement = conn.prepareStatement(queryCheckEmail);
-             PreparedStatement updateUserStatement = conn.prepareStatement(queryUpdateUser)) {
+        PreparedStatement updateUserStatement = conn.prepareStatement(queryUpdateUser);
+        updateUserStatement.setString(1, user.getPassword());
+        updateUserStatement.setString(2, user.getName());
+        updateUserStatement.setString(3, user.getStudentNumber());
+        updateUserStatement.setString(4, user.getEmail());
 
-            // Verifica se o email existe na tabela
-            checkEmailStatement.setString(1, user.getEmail());
-            ResultSet resultSet = checkEmailStatement.executeQuery();
-            if (!resultSet.next() || resultSet.getInt(1) == 0) {
-                System.err.println("[EventManagerDB] Error updating user, email not found");
-                controller.addToConsole("[EventManagerDB] Error updating user, email not found");
-                return false;
-            }
+        int rowsAffected = updateUserStatement.executeUpdate();
 
-            updateUserStatement.setString(1, user.getPassword());
-            updateUserStatement.setString(2, user.getName());
-            updateUserStatement.setString(3, user.getStudentNumber());
-            updateUserStatement.setString(4, user.getEmail());
-
-            int rowsAffected = updateUserStatement.executeUpdate();
-
-            if (rowsAffected > 0) {
-                return true;
-            }
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error updating user: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error updating user: " + e.getMessage());
-        }
-
-        return false;
+        return rowsAffected > 0;
     }
 }

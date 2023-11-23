@@ -1,4 +1,4 @@
-package pt.isec.eventmanager.serverBackup;
+package pt.isec.eventmanager.rmi;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
