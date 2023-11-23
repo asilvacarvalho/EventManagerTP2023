@@ -18,6 +18,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -25,115 +26,128 @@ import java.util.concurrent.TimeUnit;
 public class Server {
     private ServerController serverController;
 
-    private String clientTcpPort;
-    private int registryPort;
-    private String rmiServiceName;
-
     private String dbDirectory;
+    private String rmiServiceName;
+    private int registryPort;
+    private String clientTcpPort;
+
+    private String dbURL;
     private int dbVersion;
+
     private int threadNumber;
+    private final ArrayList<ServerThread> serverThreadsList;
 
-    private ServerSocket serverSocket;
-    private MulticastSocket hearBeatSocket;
+    private ServerSocket serverSocket; //TCP Client
+    private MulticastSocket hearBeatSocket; //Multicast
 
-    private ScheduledExecutorService heartBeatExecuter;
+    private ScheduledExecutorService heartBeatExecuter; //Thread for heartbeat
+    private ServerService serverService; //RMI Service
 
-    private ServerService serverService;
-
+    private volatile boolean isServerRunning;
 
     public Server() {
         this.threadNumber = 0;
+        serverThreadsList = new ArrayList<>();
+        isServerRunning = true;
     }
 
-    public void incrementDbVersion(int dbVersion) {
+    public void setDbVersion(int dbVersion) {
         this.dbVersion = dbVersion;
         Thread thread = new Thread(this::sendHeartbeat);
         thread.start();
     }
 
-    public void initServer(String clientTcpPort, String dbDirectory, int registryPort, String rmiServiceName, ServerController controller) {
-        this.serverController = controller;
-        this.clientTcpPort = clientTcpPort;
-        this.dbDirectory = dbDirectory;
-        this.registryPort = registryPort;
-        this.rmiServiceName = rmiServiceName;
+    public int getDbVersion() {
+        return dbVersion;
+    }
 
-        initDB();
-        startSendingHeartbeat();
-        initRMIService();
+    public ArrayList<ServerThread> getServerThreadsList() {
+        return serverThreadsList;
+    }
+
+    public void initServer(String dbDirectory, String rmiServiceName, int registryPort, String clientTcpPort, ServerController controller) {
+        this.dbDirectory = dbDirectory;
+        this.rmiServiceName = rmiServiceName;
+        this.registryPort = registryPort;
+        this.clientTcpPort = clientTcpPort;
+        this.serverController = controller;
 
         try {
-            initTcpServer();
+            initDB();
+            initRMIService();
+            startSendingHeartbeat();
+            startTCPServerThreads();
+        } catch (SQLException e) {
+            System.err.println("[Server] DB Connection Error: " + e.getMessage());
+            serverController.addToConsole("[Server] DB Connection Error: " + e.getMessage());
+        } catch (RemoteException | MalformedURLException e) {
+            System.out.println("[Server] RMI Service Error: " + e.getMessage());
+            serverController.addToConsole("[Server] RMI Service Error: " + e.getMessage());
         } catch (IOException e) {
-            System.out.println("[Server] Error closing ServerSocket: " + e.getMessage());
-            serverController.addToConsole("[Server] Error closing ServerSocket: " + e.getMessage());
+            System.out.println("[Server] TCPServer Error: " + e.getMessage());
+            serverController.addToConsole("[Server] TCPServer Error: " + e.getMessage());
         }
     }
 
-    private void initDB() {
-        String dbURL = dbDirectory + File.separator + Constants.DB_FILE_NAME;
+
+    private void initDB() throws SQLException {
+        dbURL = dbDirectory + File.separator + Constants.DB_FILE_NAME;
         File dbFile = new File(dbURL);
 
         if (dbFile.exists()) {
-            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbURL)) {
-                System.out.println("[Server] Connection Established to " + dbURL);
-                serverController.addToConsole("[Server] Connection Established to " + dbURL);
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbURL);
+            System.out.println("[Server] Connection Established to " + dbURL);
+            serverController.addToConsole("[Server] Connection Established to " + dbURL);
 
-                this.dbVersion = EventManagerDB.getDBVersion(conn, serverController);
-
-            } catch (SQLException e) {
-                System.err.println("[Server] Connection Error: " + e.getMessage());
-                serverController.addToConsole("[Server] Connection Error: " + e.getMessage());
-            }
+            this.dbVersion = EventManagerDB.getDBVersion(conn);
         } else {
             System.err.println("[Server] Database does not exist. Creating tables and admin user.");
 
-            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbURL)) {
-                System.out.println("[Server] Connection Established to " + dbURL);
-                serverController.addToConsole("[Server] Connection Established to " + dbURL);
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbURL);
+            System.out.println("[Server] Connection Established to " + dbURL);
+            serverController.addToConsole("[Server] Connection Established to " + dbURL);
 
-                // Criação de tabelas e admin
-                EventManagerDB.createTables(conn, serverController);
-                EventManagerDB.createAdmin(conn, serverController);
-                //TODO: remover no fim dos testes
-                EventManagerDB.createDummyData(conn, serverController);
+            // Criação de tabelas e admin
+            EventManagerDB.createTables(conn);
+            EventManagerDB.createAdmin(conn);
+            //TODO: remover no fim dos testes
+            EventManagerDB.createDummyData(conn);
+        }
+    }
 
-            } catch (SQLException e) {
-                System.err.println("[Server] Connection Error: " + e.getMessage());
-                serverController.addToConsole("[Server] Connection Error: " + e.getMessage());
+
+    private void initRMIService() throws RemoteException, MalformedURLException {
+        LocateRegistry.createRegistry(registryPort);
+
+        serverService = new ServerService(new File(dbDirectory), Constants.DB_FILE_NAME, serverController);
+        System.out.println("[Server] Servico GetRemoteFile criado e em execucao: " + serverService.getRef().remoteToString());
+        serverController.addToConsole("[Server] Servico GetRemoteFile criado e em execucao");
+
+        Naming.rebind("rmi://localhost/" + rmiServiceName, serverService);
+        System.out.println("[Server] Servico " + rmiServiceName + " registado no registry...");
+        serverController.addToConsole("[Server] Servico " + rmiServiceName + " registado no registry...");
+
+        serverController.setRMIServiceOnline(true);
+    }
+
+    private void stopRMIService() {
+        if (serverService != null) {
+            try {
+                Naming.unbind("rmi://localhost/" + rmiServiceName);
+                UnicastRemoteObject.unexportObject(serverService, true);
+                System.out.println("[Server] Servico " + rmiServiceName + " desligado.");
+                serverController.addToConsole("[Server] Servico " + rmiServiceName + " desligado.");
+                serverController.setRMIServiceOnline(false);
+
+            } catch (RemoteException | MalformedURLException | NotBoundException e) {
+                System.out.println("[Server] Error stopping RMI Service: " + e.getMessage());
+                serverController.addToConsole("[Server] Error stopping RMI Service: " + e.getMessage());
             }
         }
     }
 
-    private void initTcpServer() throws IOException {
-        try {
-            serverSocket = new ServerSocket(Integer.parseInt(clientTcpPort));
 
-            System.out.println("[Server] TCP Time Server inicialized in port " + serverSocket.getLocalPort() + " ...");
-            serverController.addToConsole("[Server] TCP Time Server inicialized in port " + serverSocket.getLocalPort() + " ...");
-
-            while (true) {
-                try {
-                    Socket toClientSocket = serverSocket.accept();
-                    Thread t = new ServerThread(toClientSocket, threadNumber++, dbDirectory, serverController, this);
-                    t.setDaemon(true);
-                    t.start();
-                } catch (Exception e) {
-                    System.out.println("[Server] Problem communication with client: " + e.getMessage());
-                    serverController.addToConsole("[Server] Problem communication with client: " + e.getMessage());
-                }
-            }
-
-        } catch (NumberFormatException e) {
-            System.out.println("[Server] Port number must be a positive integer!");
-            serverController.addToConsole("[Server] Port number must be a positive integer!");
-        } finally {
-            if (serverSocket != null)
-                serverSocket.close();
-        }
-    }
-
-    public void startSendingHeartbeat() {
+    private void startSendingHeartbeat() {
         heartBeatExecuter = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread thread = Executors.defaultThreadFactory().newThread(r);
             thread.setDaemon(true);
@@ -141,6 +155,16 @@ public class Server {
         });
 
         heartBeatExecuter.scheduleAtFixedRate(this::sendHeartbeat, 0, 10, TimeUnit.SECONDS);
+        serverController.setHeartBeatServiceOnline(true);
+    }
+
+    private void stopSendingHeartbeat() {
+        if (heartBeatExecuter != null) {
+            heartBeatExecuter.shutdown();
+            System.out.println("[Server] HeartBeat desligado");
+            serverController.addToConsole("[Server] HeartBeat desligado");
+            serverController.setHeartBeatServiceOnline(false);
+        }
     }
 
     private void sendHeartbeat() {
@@ -149,28 +173,33 @@ public class Server {
             NetworkInterface nif;
             DatagramPacket dgram;
 
-            try {
-                nif = NetworkInterface.getByInetAddress(InetAddress.getByName(Constants.HEARTBEAT_URL));
-            } catch (SocketException | NullPointerException | UnknownHostException | SecurityException ex) {
-                return;
-            }
+            nif = NetworkInterface.getByInetAddress(InetAddress.getByName(Constants.HEARTBEAT_URL));
+
 
             hearBeatSocket = new MulticastSocket(Constants.HEARTBEAT_PORT);
             hearBeatSocket.joinGroup(new InetSocketAddress(group, Constants.HEARTBEAT_PORT), nif);
 
+            HeartBeatMsg msg = createHeartbeatMessage();
+
+            if (msg == null) {
+                System.out.println("[Server] Error creating heartbeat msg ");
+                serverController.addToHeartBeatConsole("[Server] Error creating heartbeat msg");
+                return;
+            }
+
             try (ByteArrayOutputStream buff = new ByteArrayOutputStream();
                  ObjectOutputStream out = new ObjectOutputStream(buff)) {
-                out.writeObject(createHeartbeatMessage());
+                out.writeObject(msg);
 
                 dgram = new DatagramPacket(buff.toByteArray(), buff.size(), group, Constants.HEARTBEAT_PORT);
             }
             hearBeatSocket.send(dgram);
 
             System.out.println("[Server] Mensagem de heartbeat enviada para " + Constants.HEARTBEAT_URL + ":" + Constants.HEARTBEAT_PORT);
-            serverController.addToConsole("[Server] Mensagem de heartbeat enviada para " + Constants.HEARTBEAT_URL + ":" + Constants.HEARTBEAT_PORT);
+            serverController.addToHeartBeatConsole("[Server] Mensagem de heartbeat enviada para " + Constants.HEARTBEAT_URL + ":" + Constants.HEARTBEAT_PORT);
         } catch (IOException e) {
             System.out.println("[Server] Error creating heartbeat: " + e.getMessage());
-            serverController.addToConsole("[Server] Error creating heartbeat: " + e.getMessage());
+            serverController.addToHeartBeatConsole("[Server] Error creating heartbeat: " + e.getMessage());
         } finally {
             if (hearBeatSocket != null) {
                 hearBeatSocket.close();
@@ -179,40 +208,69 @@ public class Server {
     }
 
     private HeartBeatMsg createHeartbeatMessage() {
-        return new HeartBeatMsg(registryPort, rmiServiceName, dbVersion);
-    }
-
-    private void initRMIService() {
         try {
-            try {
-                LocateRegistry.createRegistry(registryPort);
-            } catch (RemoteException e) {
-                System.out.println("[Server] Error creating ServerService: " + e.getMessage());
-            }
-
-            serverService = new ServerService(new File(dbDirectory), Constants.DB_FILE_NAME);
-            System.out.println("[Server] Servico GetRemoteFile criado e em execucao: " + serverService.getRef().remoteToString());
-
-            Naming.rebind("rmi://localhost/" + rmiServiceName, serverService);
-            System.out.println("[Server] Servico " + rmiServiceName + " registado no registry...");
-
-        } catch (RemoteException | MalformedURLException e) {
-            System.out.println("[Server] Error creating RMI Service: " + e.getMessage());
-            serverController.addToConsole("[Server] Error creating RMI Service: " + e.getMessage());
+            InetAddress ip = InetAddress.getLocalHost();
+            return new HeartBeatMsg(registryPort, rmiServiceName, dbVersion, ip);
+        } catch (UnknownHostException e) {
+            System.out.println("[Server] Error creating hearBeat msg: " + e.getMessage());
+            serverController.addToHeartBeatConsole("[Server] Error creating hearBeat msg: " + e.getMessage());
+            return null;
         }
     }
 
-    public void stopRMIService() {
-        if (serverService != null) {
-            try {
-                Naming.unbind("rmi://localhost/" + rmiServiceName);
-                UnicastRemoteObject.unexportObject(serverService, true);
-                System.out.println("[Server] Servico " + rmiServiceName + " desligado.");
 
-            } catch (RemoteException | MalformedURLException | NotBoundException e) {
-                System.out.println("[Server] Error stopping RMI Service: " + e.getMessage());
-                serverController.addToConsole("[Server] Error stopping RMI Service: " + e.getMessage());
+    private void startTCPServerThreads() throws IOException {
+        serverSocket = new ServerSocket(Integer.parseInt(clientTcpPort));
+
+        System.out.println("[Server] TCP Server inicialized in port " + serverSocket.getLocalPort() + " ...");
+        serverController.addToConsole("[Server] TCP Server inicialized in port " + serverSocket.getLocalPort() + " ...");
+
+        ServerThread serverThread;
+        Socket toClientSocket = null;
+
+        while (isServerRunning) {
+            try {
+                toClientSocket = serverSocket.accept();
+                serverThread = new ServerThread(toClientSocket, threadNumber++, dbURL, serverController, this, serverService);
+                serverThread.setDaemon(true);
+
+                serverThreadsList.add(serverThread);
+
+                serverThread.start();
+            } catch (Exception e) {
+                System.out.println("[Server] Error in TCPServer: " + e.getMessage());
+                serverController.addToConsole("[Server] Error in TCPServer: " + e.getMessage());
+                if (serverSocket != null) {
+                    serverSocket.close();
+                }
+                break;
             }
         }
+
+        if (toClientSocket != null) {
+            toClientSocket.close();
+        }
+        if (serverSocket != null) {
+            serverSocket.close();
+        }
+    }
+
+    //TODO: as threads não estou a ser bem desligadas ainda...
+    private void stopTCPServerThreads() {
+        for (ServerThread serverThread : serverThreadsList) {
+            serverThread.stopServerThread();
+        }
+    }
+
+
+    public void stopServer() {
+        isServerRunning = false;
+        stopTCPServerThreads();
+        stopSendingHeartbeat();
+        stopRMIService();
+    }
+
+    public boolean serverServiceGetDBFileIsRunning() {
+        return serverService.isGetDBFileRunning();
     }
 }

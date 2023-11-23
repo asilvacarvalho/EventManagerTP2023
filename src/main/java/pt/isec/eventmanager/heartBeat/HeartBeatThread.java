@@ -47,7 +47,7 @@ public class HeartBeatThread extends Thread {
 
                     if (returnedObject instanceof HeartBeatMsg) {
                         msg = (HeartBeatMsg) returnedObject;
-                        serverBackup.setHearBeatMsg(msg);
+                        serverBackup.setHearBeatMsgReceived(msg);
                         System.out.println("[HeartBeatThread] Msg de " + datagramPacket.getAddress() + ":" + datagramPacket.getPort());
                         controller.addToConsole("[HeartBeatThread] Msg de " + datagramPacket.getAddress() + ":" + datagramPacket.getPort());
                     }

@@ -1,7 +1,6 @@
 package pt.isec.eventmanager.db;
 
 import pt.isec.eventmanager.events.Event;
-import pt.isec.eventmanager.server.ServerController;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -12,228 +11,177 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class EventoModel {
-    public static Event getEvent(Connection conn, int eventId, ServerController controller) {
+    public static Event getEvent(Connection conn, int eventId) throws SQLException {
         String query = "SELECT * FROM evento WHERE id=?";
-        try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
-            preparedStatement.setInt(1, eventId);
+        PreparedStatement preparedStatement = conn.prepareStatement(query);
+        preparedStatement.setInt(1, eventId);
 
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String name = resultSet.getString("name");
-                String location = resultSet.getString("location");
-                Date date = new Date(resultSet.getTimestamp("start_date").getTime());
+        ResultSet resultSet = preparedStatement.executeQuery();
+        if (resultSet.next()) {
+            int id = resultSet.getInt("id");
+            String name = resultSet.getString("name");
+            String location = resultSet.getString("location");
+            Date date = new Date(resultSet.getTimestamp("start_date").getTime());
 
-                Date startDate = resultSet.getTimestamp("start_date");
-                Date endDate = resultSet.getTimestamp("end_date");
+            Date startDate = resultSet.getTimestamp("start_date");
+            Date endDate = resultSet.getTimestamp("end_date");
 
 
-                String startTimeString = new SimpleDateFormat("HH:mm").format(startDate);
-                String endTimeString = new SimpleDateFormat("HH:mm").format(endDate);
+            String startTimeString = new SimpleDateFormat("HH:mm").format(startDate);
+            String endTimeString = new SimpleDateFormat("HH:mm").format(endDate);
 
-                Event event = new Event(name, location, date, startTimeString, endTimeString);
-                event.setId(id);
+            Event event = new Event(name, location, date, startTimeString, endTimeString);
+            event.setId(id);
 
-                return event;
-            }
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error getting Event: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error getting Event: " + e.getMessage());
+            return event;
         }
+
         return null;
     }
 
-    public static boolean insertEvent(Connection conn, Event event, ServerController controller) {
+    public static boolean insertEvent(Connection conn, Event event) throws SQLException {
         String insertEventQuery = "INSERT INTO evento (name, location, start_date, end_date) VALUES (?, ?, ?, ?)";
 
-        try (PreparedStatement preparedStatement = conn.prepareStatement(insertEventQuery)) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            String formattedDate = dateFormat.format(event.getDate());
+        PreparedStatement preparedStatement = conn.prepareStatement(insertEventQuery);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String formattedDate = dateFormat.format(event.getDate());
 
-            String startDateString = formattedDate + " " + event.getStartTime() + ":00";
-            String endDateString = formattedDate + " " + event.getEndTime() + ":00";
+        String startDateString = formattedDate + " " + event.getStartTime() + ":00";
+        String endDateString = formattedDate + " " + event.getEndTime() + ":00";
 
-            preparedStatement.setString(1, event.getName());
-            preparedStatement.setString(2, event.getLocation());
-            preparedStatement.setString(3, startDateString);
-            preparedStatement.setString(4, endDateString);
+        preparedStatement.setString(1, event.getName());
+        preparedStatement.setString(2, event.getLocation());
+        preparedStatement.setString(3, startDateString);
+        preparedStatement.setString(4, endDateString);
 
-            int rowsAffected = preparedStatement.executeUpdate();
+        int rowsAffected = preparedStatement.executeUpdate();
 
-            if (rowsAffected > 0) {
-                System.out.println("[EventManagerDB] Event inserted successfully.");
-                controller.addToConsole("[EventManagerDB] Event inserted successfully.");
-                return true;
-            }
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error inserting event: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error inserting event: " + e.getMessage());
+        if (rowsAffected > 0) {
+            System.out.println("[EventManagerDB] Event inserted successfully.");
+            return true;
         }
+
         return false;
     }
 
-    public static boolean deleteEvent(Connection conn, Event event, ServerController controller) {
+    public static boolean deleteEvent(Connection conn, Event event) throws SQLException {
         int eventId = event.getId();
-        if (!eventHasAttendences(conn, eventId, controller)) {
-            String deleteEventQuery = "DELETE FROM evento WHERE id=?";
-            try (PreparedStatement preparedStatement = conn.prepareStatement(deleteEventQuery)) {
-                preparedStatement.setInt(1, eventId);
 
-                int rowsAffected = preparedStatement.executeUpdate();
+        String deleteEventQuery = "DELETE FROM evento WHERE id=?";
+        PreparedStatement preparedStatement = conn.prepareStatement(deleteEventQuery);
+        preparedStatement.setInt(1, eventId);
 
-                if (rowsAffected > 0) {
-                    System.out.println("[EventManagerDB] Event deleted successfully.");
-                    controller.addToConsole("[EventManagerDB] Event deleted successfully.");
-                    return true;
-                }
-            } catch (SQLException e) {
-                System.err.println("[EventManagerDB] Error deleting event: " + e.getMessage());
-                controller.addToConsole("[EventManagerDB] Error deleting event: " + e.getMessage());
-            }
-        } else {
-            System.err.println("[EventManagerDB] Event cannot be deleted because it has attendees.");
-            controller.addToConsole("[EventManagerDB] Event cannot be deleted because it has attendees.");
+        int rowsAffected = preparedStatement.executeUpdate();
+
+        if (rowsAffected > 0) {
+            System.out.println("[EventManagerDB] Event deleted successfully.");
+            return true;
         }
+
         return false;
     }
 
-    public static boolean editEvent(Connection conn, Event event, ServerController controller) {
-        String checkEventQuery = "SELECT * FROM evento WHERE id=?";
-        String updateEventQuery;
+    public static boolean editEvent(Connection conn, Event event) throws SQLException {
+        String updateEventQuery = "UPDATE evento SET name=?, location=?, start_date=?, end_date=? WHERE id=?";
 
-        try (PreparedStatement checkEventStatement = conn.prepareStatement(checkEventQuery)) {
-            // Verifica se o evento com o ID fornecido existe na tabela evento
-            checkEventStatement.setInt(1, event.getId());
-            ResultSet eventResultSet = checkEventStatement.executeQuery();
+        PreparedStatement updateEventStatement = conn.prepareStatement(updateEventQuery);
+        updateEventStatement.setString(1, event.getName());
+        updateEventStatement.setString(2, event.getLocation());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String formattedDate = dateFormat.format(event.getDate());
 
-            if (!eventResultSet.next()) {
-                System.err.println("[EventManagerDB] Event with ID " + event.getId() + " not found.");
-                controller.addToConsole("[EventManagerDB] Event with ID " + event.getId() + " not found.");
-                return false;
-            }
+        String startDateString = formattedDate + " " + event.getStartTime() + ":00";
+        String endDateString = formattedDate + " " + event.getEndTime() + ":00";
 
-            updateEventQuery = "UPDATE evento SET name=?, location=?, start_date=?, end_date=? WHERE id=?";
+        updateEventStatement.setString(3, startDateString);
+        updateEventStatement.setString(4, endDateString);
+        updateEventStatement.setInt(5, event.getId());
 
-            try (PreparedStatement updateEventStatement = conn.prepareStatement(updateEventQuery)) {
-                updateEventStatement.setString(1, event.getName());
-                updateEventStatement.setString(2, event.getLocation());
-                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                String formattedDate = dateFormat.format(event.getDate());
+        int rowsAffected = updateEventStatement.executeUpdate();
 
-                String startDateString = formattedDate + " " + event.getStartTime() + ":00";
-                String endDateString = formattedDate + " " + event.getEndTime() + ":00";
-
-                updateEventStatement.setString(3, startDateString);
-                updateEventStatement.setString(4, endDateString);
-                updateEventStatement.setInt(5, event.getId());
-
-                int rowsAffected = updateEventStatement.executeUpdate();
-
-                if (rowsAffected > 0) {
-                    System.out.println("[EventManagerDB] Event updated successfully.");
-                    controller.addToConsole("[EventManagerDB] Event updated successfully.");
-                    return true;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error editing event: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error editing event: " + e.getMessage());
+        if (rowsAffected > 0) {
+            System.out.println("[EventManagerDB] Event updated successfully.");
+            return true;
         }
+
         return false;
     }
 
-    public static ArrayList<Event> listEvents(Connection conn, ServerController controller) {
+    public static ArrayList<Event> listEvents(Connection conn) throws SQLException {
         ArrayList<Event> events = new ArrayList<>();
         String query = "SELECT * FROM evento";
 
-        try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
-            ResultSet resultSet = preparedStatement.executeQuery();
+        PreparedStatement preparedStatement = conn.prepareStatement(query);
+        ResultSet resultSet = preparedStatement.executeQuery();
 
-            while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String name = resultSet.getString("name");
-                String location = resultSet.getString("location");
-                Date date = new Date(resultSet.getTimestamp("start_date").getTime());
+        while (resultSet.next()) {
+            int id = resultSet.getInt("id");
+            String name = resultSet.getString("name");
+            String location = resultSet.getString("location");
+            Date date = new Date(resultSet.getTimestamp("start_date").getTime());
 
-                Date startDate = resultSet.getTimestamp("start_date");
-                Date endDate = resultSet.getTimestamp("end_date");
+            Date startDate = resultSet.getTimestamp("start_date");
+            Date endDate = resultSet.getTimestamp("end_date");
 
 
-                String startTimeString = new SimpleDateFormat("HH:mm").format(startDate);
-                String endTimeString = new SimpleDateFormat("HH:mm").format(endDate);
+            String startTimeString = new SimpleDateFormat("HH:mm").format(startDate);
+            String endTimeString = new SimpleDateFormat("HH:mm").format(endDate);
 
-                Event event = new Event(name, location, date, startTimeString, endTimeString);
-                event.setId(id);
-                events.add(event);
-            }
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error listing events: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error listing events: " + e.getMessage());
+            Event event = new Event(name, location, date, startTimeString, endTimeString);
+            event.setId(id);
+            events.add(event);
         }
+
 
         return events;
     }
 
-    public static ArrayList<Event> listUserEvents(Connection conn, String username, ServerController controller) {
+    public static ArrayList<Event> listUserEvents(Connection conn, ArrayList<Integer> eventIds) throws SQLException {
         ArrayList<Event> events = new ArrayList<>();
 
-        ArrayList<Integer> eventIds = EventoUtilizadorModel.getEventIdsForUser(conn, username, controller);
-
-        if (!eventIds.isEmpty()) {
-            StringBuilder eventsQuery = new StringBuilder("SELECT * FROM evento WHERE id IN (");
-            for (int i = 0; i < eventIds.size(); i++) {
-                eventsQuery.append("?");
-                if (i != eventIds.size() - 1) {
-                    eventsQuery.append(",");
-                }
+        StringBuilder eventsQuery = new StringBuilder("SELECT * FROM evento WHERE id IN (");
+        for (int i = 0; i < eventIds.size(); i++) {
+            eventsQuery.append("?");
+            if (i != eventIds.size() - 1) {
+                eventsQuery.append(",");
             }
-            eventsQuery.append(")");
+        }
+        eventsQuery.append(")");
 
-            try (PreparedStatement eventsStatement = conn.prepareStatement(eventsQuery.toString())) {
-                for (int i = 0; i < eventIds.size(); i++) {
-                    eventsStatement.setInt(i + 1, eventIds.get(i));
-                }
+        PreparedStatement eventsStatement = conn.prepareStatement(eventsQuery.toString());
+        for (int i = 0; i < eventIds.size(); i++) {
+            eventsStatement.setInt(i + 1, eventIds.get(i));
+        }
 
-                ResultSet eventsResultSet = eventsStatement.executeQuery();
+        ResultSet eventsResultSet = eventsStatement.executeQuery();
 
-                while (eventsResultSet.next()) {
-                    int id = eventsResultSet.getInt("id");
-                    String name = eventsResultSet.getString("name");
-                    String location = eventsResultSet.getString("location");
-                    Date date = new Date(eventsResultSet.getTimestamp("start_date").getTime());
+        while (eventsResultSet.next()) {
+            int id = eventsResultSet.getInt("id");
+            String name = eventsResultSet.getString("name");
+            String location = eventsResultSet.getString("location");
+            Date date = new Date(eventsResultSet.getTimestamp("start_date").getTime());
 
-                    Date startDate = eventsResultSet.getTimestamp("start_date");
-                    Date endDate = eventsResultSet.getTimestamp("end_date");
+            Date startDate = eventsResultSet.getTimestamp("start_date");
+            Date endDate = eventsResultSet.getTimestamp("end_date");
 
-                    String startTimeString = new SimpleDateFormat("HH:mm").format(startDate);
-                    String endTimeString = new SimpleDateFormat("HH:mm").format(endDate);
+            String startTimeString = new SimpleDateFormat("HH:mm").format(startDate);
+            String endTimeString = new SimpleDateFormat("HH:mm").format(endDate);
 
-                    Event event = new Event(name, location, date, startTimeString, endTimeString);
-                    event.setId(id);
-                    events.add(event);
-                }
-            } catch (SQLException e) {
-                System.err.println("[EventManagerDB] Error listing user events: " + e.getMessage());
-                controller.addToConsole("[EventManagerDB] Error listing user events: " + e.getMessage());
-            }
+            Event event = new Event(name, location, date, startTimeString, endTimeString);
+            event.setId(id);
+            events.add(event);
         }
 
         return events;
     }
 
-
-    public static boolean eventHasAttendences(Connection conn, int eventId, ServerController controller) {
+    public static boolean eventHasAttendences(Connection conn, int eventId) throws SQLException {
         String checkEventUserQuery = "SELECT * FROM evento_utilizador WHERE evento_id=?";
 
-        try (PreparedStatement checkEventUserStatement = conn.prepareStatement(checkEventUserQuery)) {
-            checkEventUserStatement.setInt(1, eventId);
-            ResultSet eventUserResultSet = checkEventUserStatement.executeQuery();
+        PreparedStatement checkEventUserStatement = conn.prepareStatement(checkEventUserQuery);
+        checkEventUserStatement.setInt(1, eventId);
+        ResultSet eventUserResultSet = checkEventUserStatement.executeQuery();
 
-            return eventUserResultSet.next();
-        } catch (SQLException e) {
-            System.err.println("[EventManagerDB] Error checking event-user association: " + e.getMessage());
-            controller.addToConsole("[EventManagerDB] Error checking event-user association: " + e.getMessage());
-        }
-        return false;
+        return eventUserResultSet.next();
     }
 }

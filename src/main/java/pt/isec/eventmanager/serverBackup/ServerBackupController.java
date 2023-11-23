@@ -6,6 +6,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -18,9 +20,13 @@ public class ServerBackupController {
     @FXML
     private TextArea consoleTextArea;
     @FXML
+    private Circle rmiServiceCircle;
+    @FXML
     private Button startButton;
     @FXML
     private Label errorLabel;
+    @FXML
+    private Label dbVersionLabel;
 
     private boolean started = false;
 
@@ -41,11 +47,14 @@ public class ServerBackupController {
                 addToConsole("Server Backup started");
                 started = true;
                 startButton.setText("Stop");
-                this.serverBackup = new ServerBackup(dbLocationField.getText());
-                serverBackup.startHeartBeatLookup(this);
+                Thread thread = new Thread(() -> {
+                    this.serverBackup = new ServerBackup(dbLocationField.getText(), this);
+                    serverBackup.startServerBackup();
+                });
+                thread.start();
             }
         } else {
-            serverBackup.stopHeartBeatLookup();
+            serverBackup.stopServerBackup();
             addToConsole("Server Backup stoped");
             started = false;
             startButton.setText("Start");
@@ -99,5 +108,21 @@ public class ServerBackupController {
     private void hideError() {
         errorLabel.setVisible(false);
         errorLabel.setText("");
+    }
+
+    public void setRMIServiceOnline(boolean online) {
+        Platform.runLater(() -> {
+            if (online) {
+                rmiServiceCircle.setFill(Color.GREEN);
+            } else {
+                rmiServiceCircle.setFill(Color.RED);
+            }
+        });
+    }
+
+    public void setDbVersionLabel(int dbVersion) {
+        String dbVersionString = String.valueOf(dbVersion);
+
+        Platform.runLater(() -> dbVersionLabel.setText(dbVersionString));
     }
 }
