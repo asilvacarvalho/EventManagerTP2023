@@ -32,9 +32,8 @@ public class ClientController {
         serverPortField.setText("6000");
     }
 
-    public void initClientController(Stage stage, Client client) {
+    public void initClientController(Stage stage) {
         this.mainStage = stage;
-        this.client = client;
     }
 
     @FXML
@@ -46,8 +45,10 @@ public class ClientController {
             System.out.println("[ClientController] Information missing to start the client!");
             showError("Information missing to start the client!");
         } else {
+            client = new Client(serverAddress, serverPort);
+
             Thread thread = new Thread(() -> {
-                String connectionStatus = client.connect(serverAddress, serverPort);
+                String connectionStatus = client.connect();
 
                 if (connectionStatus == null) {
                     System.out.println("[ClientController] Connection established");
@@ -86,5 +87,9 @@ public class ClientController {
         PauseTransition visiblePause = new PauseTransition(Duration.seconds(3));
         visiblePause.setOnFinished(event -> errorLabel.setVisible(false));
         visiblePause.play();
+    }
+
+    public void stopClient() {
+        client.logout();
     }
 }

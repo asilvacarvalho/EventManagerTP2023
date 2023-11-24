@@ -3,16 +3,13 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.Font?>
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0"
-            prefWidth="1000.0" styleClass="server" stylesheets="@../css/global.css"
-            xmlns="http://javafx.com/javafx/18.0.2"
-            xmlns:fx="http://javafx.com/fxml/1"
+<AnchorPane prefHeight="800.0" prefWidth="1000.0" styleClass="server" stylesheets="@../css/global.css"
+            xmlns="http://javafx.com/javafx/18.0.2" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="pt.isec.eventmanager.serverBackup.ServerBackupController">
     <VBox alignment="CENTER" prefHeight="800.0" prefWidth="800.0" spacing="10.0" AnchorPane.bottomAnchor="0.0"
           AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-        <HBox alignment="TOP_CENTER" spacing="50.0">
+        <HBox alignment="TOP_CENTER" spacing="100.0">
             <VBox spacing="15.0">
                 <VBox>
                     <Label text="Database Location"/>
@@ -22,20 +19,22 @@
                 <Button fx:id="startButton" maxWidth="-Infinity" minWidth="-Infinity" mnemonicParsing="false"
                         onAction="#handleStartButtonAction" prefWidth="370.0" text="Start"/>
             </VBox>
-            <VBox alignment="TOP_CENTER">
-                <HBox alignment="CENTER_LEFT" spacing="40.0">
-                    <HBox alignment="CENTER" spacing="10.0">
-                        <Label text="RMI Service"/>
-                        <Circle fx:id="rmiServiceCircle" fill="RED" radius="8.0"/>
-                    </HBox>
-                </HBox>
+            <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+                  prefHeight="250.0" prefWidth="325.0" spacing="30.0">
                 <HBox alignment="CENTER_LEFT" spacing="15.0">
                     <Label text="DBVersion:"/>
                     <Label fx:id="dbVersionLabel"/>
                 </HBox>
             </VBox>
         </HBox>
-        <TextArea fx:id="consoleTextArea" editable="false" prefHeight="400.0" prefWidth="400.0" wrapText="true"/>
+        <HBox alignment="TOP_CENTER">
+            <TextArea fx:id="consoleTextArea" editable="false" maxHeight="-Infinity" maxWidth="-Infinity"
+                      minHeight="-Infinity" minWidth="-Infinity" prefHeight="245.0" prefWidth="800.0" wrapText="true"/>
+        </HBox>
+        <HBox alignment="TOP_CENTER">
+            <TextArea fx:id="heartBeatTextArea" editable="false" maxHeight="-Infinity" maxWidth="-Infinity"
+                      minHeight="-Infinity" minWidth="-Infinity" prefHeight="125.0" prefWidth="800.0" wrapText="true"/>
+        </HBox>
         <Label fx:id="errorLabel" textFill="red" visible="false">
             <font>
                 <Font size="12.0"/>

@@ -95,6 +95,7 @@ public class ServerService extends UnicastRemoteObject implements ServerServiceI
                 System.out.println("[ServerService] Observer Added");
                 serverController.addToConsole("[ServerService] Observer Added");
             }
+            serverController.initObserversListView(observers);
         }
     }
 
@@ -104,6 +105,7 @@ public class ServerService extends UnicastRemoteObject implements ServerServiceI
                 System.out.println("[ServerService] Observer Removed");
                 serverController.addToConsole("[ServerService] Observer Removed");
             }
+            serverController.initObserversListView(observers);
         }
     }
 
@@ -122,6 +124,10 @@ public class ServerService extends UnicastRemoteObject implements ServerServiceI
         synchronized (observers) {
             observers.removeAll(observersToRemove);
         }
+    }
+
+    public List<ServerServiceObserverInterface> getObservers() {
+        return observers;
     }
 
     public void inserUser(int dbVersion, User user) {

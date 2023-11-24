@@ -53,6 +53,7 @@ public class Server {
 
     public void setDbVersion(int dbVersion) {
         this.dbVersion = dbVersion;
+        serverController.setDbVersionLabel(this.dbVersion);
         Thread thread = new Thread(this::sendHeartbeat);
         thread.start();
     }
@@ -99,7 +100,7 @@ public class Server {
             System.out.println("[Server] Connection Established to " + dbURL);
             serverController.addToConsole("[Server] Connection Established to " + dbURL);
 
-            this.dbVersion = EventManagerDB.getDBVersion(conn);
+            setDbVersion(EventManagerDB.getDBVersion(conn));
         } else {
             System.err.println("[Server] Database does not exist. Creating tables and admin user.");
 
@@ -117,7 +118,13 @@ public class Server {
 
 
     private void initRMIService() throws RemoteException, MalformedURLException {
-        LocateRegistry.createRegistry(registryPort);
+        try {
+            LocateRegistry.createRegistry(registryPort);
+            System.out.println("[Server] Registry launch");
+            serverController.addToConsole("[Server] Registry launch");
+        } catch (RemoteException e) {
+            System.out.println("[Server] Registry probably already in execution");
+        }
 
         serverService = new ServerService(new File(dbDirectory), Constants.DB_FILE_NAME, serverController);
         System.out.println("[Server] Servico GetRemoteFile criado e em execucao: " + serverService.getRef().remoteToString());
@@ -231,7 +238,7 @@ public class Server {
         while (isServerRunning) {
             try {
                 toClientSocket = serverSocket.accept();
-                serverThread = new ServerThread(toClientSocket, threadNumber++, dbURL, serverController, this, serverService);
+                serverThread = new ServerThread(toClientSocket, dbURL, serverController, this, serverService);
                 serverThread.setDaemon(true);
 
                 serverThreadsList.add(serverThread);
@@ -255,13 +262,11 @@ public class Server {
         }
     }
 
-    //TODO: as threads não estou a ser bem desligadas ainda...
     private void stopTCPServerThreads() {
         for (ServerThread serverThread : serverThreadsList) {
             serverThread.stopServerThread();
         }
     }
-
 
     public void stopServer() {
         isServerRunning = false;

@@ -5,13 +5,15 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import pt.isec.eventmanager.rmi.ServerServiceObserverInterface;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class ServerController {
     @FXML
-    public ListView<?> backupServersListView;
+    public ListView<ServerServiceObserverInterface> backupServersListView;
     @FXML
     private TextField clientTcpPortField;
     @FXML
@@ -28,6 +30,8 @@ public class ServerController {
     private Button startButton;
     @FXML
     private Label errorLabel;
+    @FXML
+    private Label dbVersionLabel;
     @FXML
     private Circle rmiServiceCircle;
     @FXML
@@ -110,7 +114,8 @@ public class ServerController {
     }
 
     public void stopServer() {
-        server.stopServer();
+        if (server != null)
+            server.stopServer();
     }
 
     public void addToConsole(String message) {
@@ -155,5 +160,18 @@ public class ServerController {
                 heartBeatServiceCircle.setFill(Color.RED);
             }
         });
+    }
+
+    public void initObserversListView(List<ServerServiceObserverInterface> observers) {
+        Platform.runLater(() -> {
+            backupServersListView.getItems().clear();
+            backupServersListView.getItems().addAll(observers);
+        });
+    }
+
+    public void setDbVersionLabel(int dbVersion) {
+        String dbVersionString = String.valueOf(dbVersion);
+
+        Platform.runLater(() -> dbVersionLabel.setText(dbVersionString));
     }
 }

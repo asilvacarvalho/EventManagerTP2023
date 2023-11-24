@@ -51,6 +51,9 @@ public class ClientAuthenticatedController {
     private AnchorPane loadingPane;
     private PauseTransition infoPauseTransition;
 
+    private ArrayList<Attendance> listAttendances;
+    private ArrayList<Event> listEvents;
+
     @FXML
     public void initialize() {
         this.loadingPane = loadingPane();
@@ -96,6 +99,7 @@ public class ClientAuthenticatedController {
     public void initClientAutheController(Stage stage, Client client) {
         this.mainStage = stage;
         this.client = client;
+        client.setClientAuthenticatedController(this);
         initLayout();
     }
 
@@ -324,7 +328,7 @@ public class ClientAuthenticatedController {
                         } else {
                             showInfo("Error deleting event", LabelType.ERROR);
                         }
-                        initListEvents();
+                        //initListEvents();
                     });
                 });
 
@@ -333,14 +337,14 @@ public class ClientAuthenticatedController {
         });
     }
 
-    public void showEventAttendances(Event event) {
+    public void listEventAttendances(Event event) {
         try {
             FXMLLoader loader = new FXMLLoader(MainClient.class.getResource("fxml/list-attendances.fxml"));
 
             Pane listAttendancesPane = loader.load();
 
             Thread thread = new Thread(() -> {
-                ArrayList<Attendance> listAttendances = client.listAttendences(event.getId());
+                listAttendances = client.listAttendences(event.getId());
 
                 Platform.runLater(() -> {
                     mainContentArea.getChildren().clear();
@@ -391,6 +395,7 @@ public class ClientAuthenticatedController {
                 } else {
                     showInfo("Operation Error!", LabelType.ERROR);
                 }
+                mainContentArea.requestLayout();
             });
         });
         thread.start();
@@ -419,7 +424,7 @@ public class ClientAuthenticatedController {
                         } else {
                             showInfo("Operation Error!", LabelType.ERROR);
                         }
-                        showEventAttendances(event);
+                        listEventAttendances(event);
                     });
                 });
 
@@ -440,5 +445,14 @@ public class ClientAuthenticatedController {
         pane.getChildren().add(loadingLabel);
 
         return pane;
+    }
+
+    private void refreshListEventAttendances(Event event) {
+        System.out.println("ATUALIZA EVENTO: " + event.getId());
+    }
+
+    public void refreshListEvens(ArrayList<Event> listEvents) {
+        System.out.println("ATUALIZA EVENTOS: ");
+        //this.listEvents = new ArrayList<>(listEvents);
     }
 }

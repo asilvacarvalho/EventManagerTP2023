@@ -16,7 +16,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.rmi.Naming;
-import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -54,8 +53,25 @@ public class ServerBackup {
         this.dbDirectory = dbDirectory;
     }
 
-    public void startServerBackup() {
-        startHeartBeatLookup();
+    private void startServerBackup() {
+        if (heartBeatMsg.getServerRMIServiceName().isEmpty()) return;
+
+        try {
+            initServerService();
+            getDBFile();
+            startObserver();
+
+            System.out.println("[ServerBackup] DBFile saved in " + dbDirectory);
+            serverBackupController.addToConsole("[ServerBackup] DBFile saved in " + dbDirectory);
+
+            dbVersion = heartBeatMsg.getDbVersion();
+            serverBackupController.setDbVersionLabel(dbVersion);
+
+            firstRun = false;
+        } catch (NotBoundException | IOException e) {
+            System.out.println("[ServerBackup] Error Getting DBFile: " + e.getMessage());
+            serverBackupController.addToConsole("[ServerBackup] Error Getting DBFile: " + e.getMessage());
+        }
     }
 
     public void stopServerBackup() {
@@ -63,8 +79,8 @@ public class ServerBackup {
         stopObserver();
     }
 
-    private void startHeartBeatLookup() {
-        System.out.println("[ServerBackup] Stopping heartbeat");
+    public void startHeartBeatLookup() {
+        System.out.println("[ServerBackup] Starting heartbeat lookup");
         try {
             group = InetAddress.getByName(Constants.HEARTBEAT_URL);
             nif = null;
@@ -91,32 +107,17 @@ public class ServerBackup {
     }
 
     private void stopHeartBeatLookup() {
-        socket.close();
-        heartbeatListenerThread.interrupt();
+        if (heartbeatListenerThread != null && heartbeatListenerThread.isAlive()) {
+            heartbeatListenerThread.stopHeartBeatThread();
+            heartbeatListenerThread.interrupt();
+        }
     }
 
     public void setHearBeatMsgReceived(HeartBeatMsg msg) {
         this.heartBeatMsg = msg;
 
-        if (firstRun || update) {
-            try {
-                initServerService();
-                addObserver();
-
-                getDBFile();
-
-                System.out.println("[ServerBackup] DBFile saved in " + dbDirectory);
-                serverBackupController.addToConsole("[ServerBackup] DBFile saved in " + dbDirectory);
-
-                this.dbVersion = msg.getDbVersion();
-                serverBackupController.setDbVersionLabel(this.dbVersion);
-
-                firstRun = false;
-                update = false;
-            } catch (NotBoundException | IOException e) {
-                System.out.println("[ServerBackup] Error Getting DBFile: " + e.getMessage());
-                serverBackupController.addToConsole("[ServerBackup] Error Getting DBFile: " + e.getMessage());
-            }
+        if (firstRun) {
+            startServerBackup();
         }
     }
 
@@ -124,36 +125,20 @@ public class ServerBackup {
         serverServiceInterface = (ServerServiceInterface) Naming.lookup(heartBeatMsg.getServerRMIServiceName());
     }
 
-    private void getDBFile() throws IOException, NotBoundException {
-        if (heartBeatMsg.getServerRMIServiceName().isEmpty()) return;
-
+    private void getDBFile() throws IOException {
         String localFilePath = new File(dbDirectory + File.separator + Constants.DB_FILE_NAME).getCanonicalPath();
 
-        try (FileOutputStream localFileOutputStream = new FileOutputStream(localFilePath)) {
+        FileOutputStream localFileOutputStream = new FileOutputStream(localFilePath);
 
-            backupServerService = new BackupServerService();
-            serverBackupController.setRMIServiceOnline(true);
+        backupServerService = new BackupServerService();
 
-            backupServerService.setFout(localFileOutputStream);
-            serverServiceInterface.getDBFile(backupServerService);
+        backupServerService.setFout(localFileOutputStream);
+        serverServiceInterface.getDBFile(backupServerService);
 
-            this.dbUrl = dbDirectory + File.separator + Constants.DB_FILE_NAME;
-
-        } finally {
-            if (backupServerService != null) {
-                backupServerService.setFout(null);
-                try {
-                    UnicastRemoteObject.unexportObject(backupServerService, true);
-                    serverBackupController.setRMIServiceOnline(false);
-                } catch (NoSuchObjectException e) {
-                    System.out.println("[ServerBackup] Error Removing RMI Service: " + e.getMessage());
-                    serverBackupController.addToConsole("[ServerBackup] Error Removing RMI Service: " + e.getMessage());
-                }
-            }
-        }
+        this.dbUrl = dbDirectory + File.separator + Constants.DB_FILE_NAME;
     }
 
-    private void addObserver() throws RemoteException {
+    private void startObserver() throws RemoteException {
         observer = new ServerServiceObserver(this);
         System.out.println("[ServerBackup] Servico ServerServiceObserver criado e em execucao...");
         serverBackupController.addToConsole("[ServerBackup] Servico ServerServiceObserver criado e em execucao...");
@@ -161,6 +146,8 @@ public class ServerBackup {
     }
 
     private void stopObserver() {
+        System.out.println("[ServerBackup] Stopping Observer");
+        serverBackupController.addToConsole("[ServerBackup] Stopping Observer");
         try {
             serverServiceInterface.removeObserver(observer);
             UnicastRemoteObject.unexportObject(observer, true);
@@ -172,8 +159,8 @@ public class ServerBackup {
 
     //OBSERVER
     public void observerNotify(String description) {
-        System.out.println("[ServerServiceObserver] " + description);
-        serverBackupController.addToConsole("[ServerServiceObserver] " + description);
+        System.out.println("[ServerBackup] " + description);
+        serverBackupController.addToConsole("[ServerBackup] " + description);
     }
 
     public void insertUser(int dbVersion, User user) throws SQLException {
@@ -182,13 +169,15 @@ public class ServerBackup {
             return;
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         synchronized (lock) {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+            System.out.println("[ServerBackup] Inserting User");
+            serverBackupController.addToConsole("[ServerBackup] Inserting User");
+
             boolean success = EventManagerDB.insertUser(conn, user);
-            incrementDBVersion(success);
+            incrementDBVersion(success, conn);
+
+            conn.close();
         }
     }
 
@@ -198,13 +187,15 @@ public class ServerBackup {
             return;
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         synchronized (lock) {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+            System.out.println("[ServerBackup] Editing User");
+            serverBackupController.addToConsole("[ServerBackup] Editing User");
+
             boolean success = EventManagerDB.editUser(conn, user);
-            incrementDBVersion(success);
+            incrementDBVersion(success, conn);
+
+            conn.close();
         }
     }
 
@@ -214,13 +205,15 @@ public class ServerBackup {
             return;
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         synchronized (lock) {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+            System.out.println("[ServerBackup] Inserting Event");
+            serverBackupController.addToConsole("[ServerBackup] Inserting Event");
+
             boolean success = EventManagerDB.insertEvent(conn, event);
-            incrementDBVersion(success);
+            incrementDBVersion(success, conn);
+
+            conn.close();
         }
     }
 
@@ -230,13 +223,16 @@ public class ServerBackup {
             return;
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         synchronized (lock) {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+            System.out.println("[ServerBackup] Deleting Event");
+            serverBackupController.addToConsole("[ServerBackup] Deleting Event");
+
+
             boolean success = EventManagerDB.deleteEvent(conn, event);
-            incrementDBVersion(success);
+            incrementDBVersion(success, conn);
+
+            conn.close();
         }
     }
 
@@ -246,13 +242,15 @@ public class ServerBackup {
             return;
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         synchronized (lock) {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+            System.out.println("[ServerBackup] Editing Event");
+            serverBackupController.addToConsole("[ServerBackup] Editing Event");
+
             boolean success = EventManagerDB.editEvent(conn, event);
-            incrementDBVersion(success);
+            incrementDBVersion(success, conn);
+
+            conn.close();
         }
     }
 
@@ -262,13 +260,15 @@ public class ServerBackup {
             return;
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         synchronized (lock) {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+            System.out.println("[ServerBackup] Inserting Attendance");
+            serverBackupController.addToConsole("[ServerBackup] Inserting Attendance");
+
             boolean success = EventManagerDB.insertAttendanceEvent(conn, eventId, username);
-            incrementDBVersion(success);
+            incrementDBVersion(success, conn);
+
+            conn.close();
         }
     }
 
@@ -278,13 +278,15 @@ public class ServerBackup {
             return;
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         synchronized (lock) {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+            System.out.println("[ServerBackup] Deleting Attendance");
+            serverBackupController.addToConsole("[ServerBackup] Deleting Attendance");
+
             boolean success = EventManagerDB.deletePresenceFromEvent(conn, eventId, username);
-            incrementDBVersion(success);
+            incrementDBVersion(success, conn);
+
+            conn.close();
         }
     }
 
@@ -294,13 +296,16 @@ public class ServerBackup {
             return;
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         synchronized (lock) {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+            System.out.println("[ServerBackup] Inserting Event Key");
+            serverBackupController.addToConsole("[ServerBackup] Inserting Event Key");
+
+
             boolean success = EventManagerDB.insertEventKey(conn, eventKey);
-            incrementDBVersion(success);
+            incrementDBVersion(success, conn);
+
+            conn.close();
         }
     }
 
@@ -310,35 +315,34 @@ public class ServerBackup {
             return;
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         synchronized (lock) {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+            System.out.println("[ServerBackup] Deleting Event Key");
+            serverBackupController.addToConsole("[ServerBackup] Deleting Event Key");
+
             boolean success = EventManagerDB.deleteEventKey(conn, eventKey);
-            incrementDBVersion(success);
+            incrementDBVersion(success, conn);
+
+            conn.close();
         }
     }
 
     //DB
-    private void incrementDBVersion(boolean increment) throws SQLException {
+    private void incrementDBVersion(boolean increment, Connection conn) throws SQLException {
         if (!increment) {
             stopServerBackup();
         }
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        System.out.println("[ServerThread] Connection Established to " + dbUrl);
-        serverBackupController.addToConsole("[ServerThread] Connection Established to " + dbUrl);
-
         int newDBVersion = EventManagerDB.incrementDBVersion(conn);
 
         if (newDBVersion > 0) {
-            System.out.println("[ServerThread] DBVersion Increment Success");
-            serverBackupController.addToConsole("[ServerThread] DBVersion Increment Success");
-            this.dbVersion = newDBVersion;
+            System.out.println("[ServerBackup] DBVersion Increment Success");
+            serverBackupController.addToConsole("[ServerBackup] DBVersion Increment Success");
+            dbVersion = newDBVersion;
+            serverBackupController.setDbVersionLabel(dbVersion);
         } else {
-            System.out.println("[ServerThread] DBVersion Increment Error");
-            serverBackupController.addToConsole("[ServerThread] DBVersion Increment Error");
+            System.out.println("[ServerBackup] DBVersion Increment Error");
+            serverBackupController.addToConsole("[ServerBackup] DBVersion Increment Error");
             stopServerBackup();
         }
     }
