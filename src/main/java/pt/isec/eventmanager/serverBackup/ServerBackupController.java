@@ -6,8 +6,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -20,7 +18,7 @@ public class ServerBackupController {
     @FXML
     private TextArea consoleTextArea;
     @FXML
-    private Circle rmiServiceCircle;
+    private TextArea heartBeatTextArea;
     @FXML
     private Button startButton;
     @FXML
@@ -28,7 +26,7 @@ public class ServerBackupController {
     @FXML
     private Label dbVersionLabel;
 
-    private boolean started = false;
+    private boolean running = false;
 
     private ServerBackup serverBackup;
 
@@ -40,28 +38,33 @@ public class ServerBackupController {
 
     @FXML
     private void handleStartButtonAction() {
-        if (!started) {
+        if (!running) {
             boolean success = checkDBDirectory();
 
             if (success) {
-                addToConsole("Server Backup started");
-                started = true;
-                startButton.setText("Stop");
                 Thread thread = new Thread(() -> {
                     this.serverBackup = new ServerBackup(dbLocationField.getText(), this);
-                    serverBackup.startServerBackup();
+                    serverBackup.startHeartBeatLookup();
                 });
                 thread.start();
+                addToConsole("[ServerBackupController] Server Backup started");
+                running = true;
+                dbLocationField.setDisable(true);
+                consoleTextArea.clear();
+                heartBeatTextArea.clear();
+                startButton.setText("Stop");
             }
         } else {
             serverBackup.stopServerBackup();
-            addToConsole("Server Backup stoped");
-            started = false;
+            addToConsole("[ServerBackupController] Server Backup stoped");
+            running = false;
+            dbLocationField.setDisable(false);
             startButton.setText("Start");
         }
     }
 
-    public void initServerBackupController() {
+    public boolean isRunning() {
+        return running;
     }
 
     private boolean checkDBDirectory() {
@@ -100,6 +103,13 @@ public class ServerBackupController {
         Platform.runLater(() -> consoleTextArea.appendText(formatter.format(date) + " - " + message + "\n"));
     }
 
+    public void addToHeartBeatConsole(String message) {
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        Date date = new Date();
+
+        Platform.runLater(() -> heartBeatTextArea.appendText(formatter.format(date) + " - " + message + "\n"));
+    }
+
     private void showError(String msg) {
         errorLabel.setText(msg);
         errorLabel.setVisible(true);
@@ -110,19 +120,13 @@ public class ServerBackupController {
         errorLabel.setText("");
     }
 
-    public void setRMIServiceOnline(boolean online) {
-        Platform.runLater(() -> {
-            if (online) {
-                rmiServiceCircle.setFill(Color.GREEN);
-            } else {
-                rmiServiceCircle.setFill(Color.RED);
-            }
-        });
-    }
-
     public void setDbVersionLabel(int dbVersion) {
         String dbVersionString = String.valueOf(dbVersion);
 
         Platform.runLater(() -> dbVersionLabel.setText(dbVersionString));
+    }
+
+    public void stopServer() {
+        serverBackup.stopServerBackup();
     }
 }

@@ -28,7 +28,8 @@ public class MainServer extends Application {
         });
 
         stage.setOnCloseRequest(event -> {
-            serverController.stopServer();
+            if (serverController != null)
+                serverController.stopServer();
         });
     }
 

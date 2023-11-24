@@ -7,6 +7,7 @@ import pt.isec.eventmanager.users.User;
 import pt.isec.eventmanager.users.UserKey;
 import pt.isec.eventmanager.util.Constants;
 
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
@@ -19,7 +20,17 @@ public class Client {
     private String serverAddress;
     private String serverPort;
 
-    public Client() {
+    private Socket socket;
+    private ObjectInputStream oin;
+    private ObjectOutputStream oout;
+
+
+    private ClientAuthenticatedController clientAuthenticatedController;
+    private ClientThread clientThread;
+
+    public Client(String serverAddress, String serverPort) {
+        this.serverAddress = serverAddress;
+        this.serverPort = serverPort;
     }
 
     public User getUser() {
@@ -34,40 +45,36 @@ public class Client {
         return serverPort;
     }
 
-    public String connect(String serverAddress, String serverPort) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort))) {
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
+    public void setClientAuthenticatedController(ClientAuthenticatedController controller) {
+        this.clientAuthenticatedController = controller;
+    }
 
-            this.serverAddress = serverAddress;
-            this.serverPort = serverPort;
-            return null;
-        } catch (Exception e) {
-            return "[Client] Ocorreu um erro no acesso ao socket:\n\t" + e.getMessage();
-        }
+    public String connect() {
+        return null;
     }
 
     //USERS
     public boolean login(String username, String password) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        try {
+            Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
+            ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
+            ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream());
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
-            // Enviar o tipo de operação
             oout.writeObject(Constants.AUTHENTICATION_REQUEST);
             oout.flush();
 
-            // Enviar dados de autenticação
             oout.writeObject(new User(username, password));
             oout.flush();
 
             try {
-                // Receber resposta do servidor
                 User authenticatedUser = (User) oin.readObject();
 
                 if (authenticatedUser != null) {
                     this.user = authenticatedUser;
+                    this.socket = socket;
+                    this.oin = oin;
+                    this.oout = oout;
+
                     return true;
                 }
             } catch (SocketTimeoutException e) {
@@ -82,6 +89,21 @@ public class Client {
     }
 
     public void logout() {
+        this.serverAddress = "";
+        this.serverPort = "";
+
+        if (clientThread != null)
+            clientThread.interrupt();
+
+        if (this.socket != null)
+            try {
+                oin.close();
+                oout.close();
+                socket.close();
+            } catch (IOException e) {
+                System.out.println("[Client] Error logging out: " + e.getMessage());
+            }
+
         this.user = null;
     }
 
@@ -118,46 +140,33 @@ public class Client {
     }
 
     public boolean editUser(User user) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return false;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
-            // Enviar o tipo de operação
+        try {
             oout.writeObject(Constants.EDITUSER_REQUEST);
             oout.flush();
 
             oout.writeObject(user);
             oout.flush();
 
-            try {
-                // Receber resposta do servidor
-                boolean success = (boolean) oin.readObject();
+            boolean success = (boolean) oin.readObject();
 
-                if (success) {
-                    this.user = user;
-                    return true;
-                }
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return false;
+            if (success) {
+                this.user = user;
+                return true;
             }
 
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return false;
+        } catch (IOException | ClassNotFoundException e) {
+            return false;
         }
-        return false;
     }
 
     @SuppressWarnings("unchecked")
     public ArrayList<Event> listUserEvents(String username) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return null;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.LISTUSEREVENTS_REQUEST);
             oout.flush();
 
@@ -167,338 +176,204 @@ public class Client {
                 oout.writeObject(user.getEmail());
             oout.flush();
 
-            try {
-                return (ArrayList<Event>) oin.readObject();
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return null;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return (ArrayList<Event>) oin.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            return null;
         }
-        return null;
     }
 
     //EVENTS
     public boolean addEvent(Event event) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return false;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.INSERTEVENT_REQUEST);
             oout.flush();
 
             oout.writeObject(event);
             oout.flush();
 
-            try {
-                boolean registrationSuccess = (boolean) oin.readObject();
+            boolean registrationSuccess = (boolean) oin.readObject();
 
-                if (registrationSuccess) {
-                    return true;
-                }
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return false;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return registrationSuccess;
+        } catch (IOException | ClassNotFoundException e) {
+            return false;
         }
-        return false;
     }
 
     @SuppressWarnings("unchecked")
     public ArrayList<Event> listEvents() {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return null;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.LISTEVENTS_REQUEST);
             oout.flush();
 
-            try {
-                return (ArrayList<Event>) oin.readObject();
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return null;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return (ArrayList<Event>) oin.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            return null;
         }
-        return null;
     }
 
     public boolean editEvent(Event event) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return false;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.EDITEVENT_REQUEST);
             oout.flush();
 
             oout.writeObject(event);
             oout.flush();
 
-            try {
-                boolean editSuccess = (boolean) oin.readObject();
+            boolean success = (boolean) oin.readObject();
 
-                if (editSuccess) {
-                    return true;
-                }
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return false;
-            }
+            return success;
 
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+        } catch (IOException | ClassNotFoundException e) {
+            return false;
         }
-        return false;
     }
 
     public boolean deleteEvent(Event event) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return false;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.DELETEEVENT_REQUEST);
             oout.flush();
 
             oout.writeObject(event);
             oout.flush();
 
-            try {
-                boolean success = (boolean) oin.readObject();
+            boolean success = (boolean) oin.readObject();
 
-                if (success) {
-                    return true;
-                }
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] deleteEvent Socket timeout");
-                return false;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during deleteEvent: " + e);
+            return success;
+        } catch (IOException | ClassNotFoundException e) {
             return false;
         }
-        return false;
     }
 
     public boolean checkEventHasAttendences(int eventId) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return false;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.EVENTHASATTENDENCES_REQUEST);
             oout.flush();
 
             oout.writeObject(eventId);
             oout.flush();
 
-            try {
-                boolean eventHasAttendences = (boolean) oin.readObject();
+            boolean success = (boolean) oin.readObject();
 
-                if (eventHasAttendences) {
-                    return true;
-                }
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return false;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return success;
+        } catch (IOException | ClassNotFoundException e) {
+            return false;
         }
-        return false;
     }
 
     @SuppressWarnings("unchecked")
     public ArrayList<Attendance> listAttendences(int eventId) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return null;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
-            // Enviar o tipo de operação
+        try {
             oout.writeObject(Constants.LISTATTENDENCES_REQUEST);
             oout.flush();
 
             oout.writeObject(eventId);
             oout.flush();
 
-            try {
-                return (ArrayList<Attendance>) oin.readObject();
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return null;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return (ArrayList<Attendance>) oin.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            return null;
         }
-        return null;
     }
 
     public boolean addAttendance(Attendance attendance) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return false;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.ADDATTENDENCE_REQUEST);
             oout.flush();
 
             oout.writeObject(attendance);
             oout.flush();
 
-            try {
-                boolean registrationSuccess = (boolean) oin.readObject();
+            boolean success = (boolean) oin.readObject();
 
-                if (registrationSuccess) {
-                    return true;
-                }
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return false;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return success;
+        } catch (IOException | ClassNotFoundException e) {
+            return false;
         }
-        return false;
     }
 
     public boolean deleteAttendance(Attendance attendance) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return false;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.DELETEATTENDENCE_REQUEST);
             oout.flush();
 
             oout.writeObject(attendance);
             oout.flush();
 
-            try {
-                boolean registrationSuccess = (boolean) oin.readObject();
+            boolean success = (boolean) oin.readObject();
 
-                if (registrationSuccess) {
-                    return true;
-                }
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return false;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return success;
+        } catch (IOException | ClassNotFoundException e) {
+            return false;
         }
-        return false;
     }
 
     //EVENT KEY
     public EventKey getEventKey(Event event) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return null;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.GETEVENTKEY_REQUEST);
             oout.flush();
 
             oout.writeObject(event.getId());
             oout.flush();
 
-            try {
-                return (EventKey) oin.readObject();
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-            }
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return (EventKey) oin.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            return null;
         }
-
-        return null;
     }
 
     public boolean insertEventKey(EventKey eventKey) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return false;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.GENERATEEVENTKEY_REQUEST);
             oout.flush();
 
             oout.writeObject(eventKey);
             oout.flush();
 
-            try {
-                boolean generateKeySuccess = (boolean) oin.readObject();
+            boolean success = (boolean) oin.readObject();
 
-                if (generateKeySuccess) {
-                    return true;
-                }
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return false;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return success;
+        } catch (IOException | ClassNotFoundException e) {
+            return false;
         }
-        return false;
-
     }
 
     //USER KEY
     public boolean insertUserKey(UserKey userKey) {
-        try (Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
-             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())) {
+        if (socket == null || oin == null || oout == null) return false;
 
-            socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
-
+        try {
             oout.writeObject(Constants.INSERTUSERKEY_REQUEST);
             oout.flush();
 
             oout.writeObject(userKey);
             oout.flush();
 
-            try {
-                boolean insertUserKeySuccess = (boolean) oin.readObject();
+            boolean success = (boolean) oin.readObject();
 
-                if (insertUserKeySuccess) {
-                    return true;
-                }
-            } catch (SocketTimeoutException e) {
-                System.out.println("[Client] Socket timeout");
-                return false;
-            }
-
-        } catch (Exception e) {
-            System.out.println("[Client] Erro during socket creation :\n\t" + e.getMessage());
+            return success;
+        } catch (IOException | ClassNotFoundException e) {
+            return false;
         }
-        return false;
     }
 }

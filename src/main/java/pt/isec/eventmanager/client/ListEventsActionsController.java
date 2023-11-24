@@ -58,6 +58,6 @@ public class ListEventsActionsController {
     @FXML
     void handleInfoAction() {
         if (clientAuthenticatedController != null && listItem != null)
-            clientAuthenticatedController.showEventAttendances(listItem);
+            clientAuthenticatedController.listEventAttendances(listItem);
     }
 }

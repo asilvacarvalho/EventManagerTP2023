@@ -43,22 +43,24 @@
                         <Circle fx:id="rmiServiceCircle" fill="RED" radius="8.0"/>
                     </HBox>
                 </HBox>
+                <HBox alignment="CENTER_LEFT" spacing="15.0">
+                    <Label text="DBVersion:"/>
+                    <Label fx:id="dbVersionLabel"/>
+                </HBox>
                 <VBox>
                     <Label text="Backup Servers"/>
                     <ListView fx:id="backupServersListView" maxHeight="-Infinity" minWidth="-Infinity"
-                              prefHeight="220.0" prefWidth="325.0"/>
+                              prefHeight="172.0" prefWidth="325.0"/>
                 </VBox>
             </VBox>
         </HBox>
         <HBox alignment="TOP_CENTER">
             <TextArea fx:id="consoleTextArea" editable="false" maxHeight="-Infinity" maxWidth="-Infinity"
-                      minHeight="-Infinity" minWidth="-Infinity" prefHeight="245.0" prefWidth="800.0"
-                      wrapText="true"/>
+                      minHeight="-Infinity" minWidth="-Infinity" prefHeight="245.0" prefWidth="800.0" wrapText="true"/>
         </HBox>
         <HBox alignment="TOP_CENTER">
             <TextArea fx:id="heartBeatTextArea" editable="false" maxHeight="-Infinity" maxWidth="-Infinity"
-                      minHeight="-Infinity" minWidth="-Infinity" prefHeight="125.0" prefWidth="800.0"
-                      wrapText="true"/>
+                      minHeight="-Infinity" minWidth="-Infinity" prefHeight="125.0" prefWidth="800.0" wrapText="true"/>
         </HBox>
         <Label fx:id="errorLabel" textFill="red" visible="false">
             <font>

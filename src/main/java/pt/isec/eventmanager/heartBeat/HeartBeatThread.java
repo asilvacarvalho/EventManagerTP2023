@@ -25,18 +25,26 @@ public class HeartBeatThread extends Thread {
         running = true;
     }
 
+    public void stopHeartBeatThread() {
+        this.running = false;
+        if (!multicastSocket.isClosed()) {
+            multicastSocket.close();
+        }
+    }
+
     @Override
     public void run() {
         DatagramPacket datagramPacket;
         HeartBeatMsg msg;
-        ObjectInputStream in;
+        ObjectInputStream in = null;
 
         if (multicastSocket == null || controller == null) return;
 
         try {
             System.out.println("[HeartBeatThread] Running HeartBeatThread");
-            controller.addToConsole("[HeartBeatThread] Running HeartBeatThread");
+            controller.addToHeartBeatConsole("[HeartBeatThread] Running HeartBeatThread");
             multicastSocket.setSoTimeout(Constants.HEARTBEAT_BACKUP_TIMEOUT * 1000);
+
             while (running) {
                 datagramPacket = new DatagramPacket(new byte[Constants.HEARTBEAT_MAX_SIZE], Constants.HEARTBEAT_MAX_SIZE);
                 multicastSocket.receive(datagramPacket);
@@ -49,28 +57,29 @@ public class HeartBeatThread extends Thread {
                         msg = (HeartBeatMsg) returnedObject;
                         serverBackup.setHearBeatMsgReceived(msg);
                         System.out.println("[HeartBeatThread] Msg de " + datagramPacket.getAddress() + ":" + datagramPacket.getPort());
-                        controller.addToConsole("[HeartBeatThread] Msg de " + datagramPacket.getAddress() + ":" + datagramPacket.getPort());
+                        controller.addToHeartBeatConsole("[HeartBeatThread] Msg de " + datagramPacket.getAddress() + ":" + datagramPacket.getPort());
                     }
 
                 } catch (ClassNotFoundException e) {
                     System.out.println("[HeartBeatThread] Msg format unexpected");
-                    controller.addToConsole("[HeartBeatThread] Msg format unexpected");
+                    controller.addToHeartBeatConsole("[HeartBeatThread] Msg format unexpected");
                 } catch (IOException e) {
                     System.out.println("[HeartBeatThread] Can't read Msg");
-                    controller.addToConsole("[HeartBeatThread] Can't read Msg");
+                    controller.addToHeartBeatConsole("[HeartBeatThread] Can't read Msg");
                 }
             }
+
+            if (in != null) {
+                in.close();
+            }
+
         } catch (SocketTimeoutException e) {
             System.out.println("[HeartBeatThread] Timeout - No messages received for 30 seconds. Terminating...");
-            multicastSocket.close();
+            controller.addToHeartBeatConsole("[HeartBeatThread] Timeout - No messages received for 30 seconds. Terminating...");
+            stopHeartBeatThread();
             Platform.exit();
         } catch (IOException e) {
-            if (running) {
-                System.out.println(e.getMessage());
-            }
-            if (!multicastSocket.isClosed()) {
-                multicastSocket.close();
-            }
+            stopHeartBeatThread();
         }
     }
 }

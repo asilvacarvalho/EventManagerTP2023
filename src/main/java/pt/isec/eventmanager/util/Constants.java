@@ -44,4 +44,8 @@ public class Constants implements Serializable {
 
     //USER KEY
     public static final String INSERTUSERKEY_REQUEST = "INSERTUSERKEY";
+
+    //CLIENT
+    public static final String REFRESH_EVENTS = "REFRESHEVENTS";
+    public static final String REFRESH_ATTENDANCES = "REFRESHATTENDANCES";
 }
