@@ -278,4 +278,38 @@ public class Server {
     public boolean serverServiceGetDBFileIsRunning() {
         return serverService.isGetDBFileRunning();
     }
+
+    public void refreshClientEvents() {
+        ArrayList<ServerThread> unresponsiveThreads = new ArrayList<>();
+
+        for (ServerThread serverThread : serverThreadsList) {
+            if (serverThread.isContinuosCommunication())
+                try {
+                    serverThread.refreshClientEvents();
+                } catch (IOException e) {
+                    System.out.println("[server] Error refreshing client events, removing client...");
+                    serverController.addToConsole("[server] Error refreshing client events, removing client...");
+                    unresponsiveThreads.add(serverThread);
+                }
+        }
+
+        serverThreadsList.removeAll(unresponsiveThreads);
+    }
+
+    public void refreshClientAttendances(int eventId) {
+        ArrayList<ServerThread> unresponsiveThreads = new ArrayList<>();
+
+        for (ServerThread serverThread : serverThreadsList) {
+            if (serverThread.isContinuosCommunication())
+                try {
+                    serverThread.refreshClientAttendances(eventId);
+                } catch (IOException e) {
+                    System.out.println("[server] Error refreshing client attendances, removing client...");
+                    serverController.addToConsole("[server] Error refreshing client attendances, removing client...");
+                    unresponsiveThreads.add(serverThread);
+                }
+        }
+
+        serverThreadsList.removeAll(unresponsiveThreads);
+    }
 }

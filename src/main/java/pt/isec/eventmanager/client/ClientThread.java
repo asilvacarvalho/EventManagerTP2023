@@ -13,74 +13,69 @@ public class ClientThread extends Thread {
     private Client client;
     private Socket toServerSocket;
 
+    ObjectInputStream oin;
+    ObjectOutputStream oout;
+
     private volatile boolean isClientRunning;
 
-    public ClientThread(Socket toServerSocket, Client client) {
+    public ClientThread(Socket toServerSocket, ObjectInputStream oin, ObjectOutputStream oout, Client client) {
         this.client = client;
         this.toServerSocket = toServerSocket;
+        this.oin = oin;
+        this.oout = oout;
     }
 
-    public void stopServerThread() {
+    public void stopClientThread() {
         isClientRunning = false;
-        System.out.println("[ClientThread] id " + this.getId() + " Stoped.");
+        System.out.println("[ClientThread] ClientThread id " + this.getId() + " Stoped.");
     }
 
     @Override
     public void run() {
         isClientRunning = true;
-        System.out.println("[ClientThread] id " + this.getId() + " Running.");
+        System.out.println("[ClientThread] ClientThread id " + this.getId() + " Running.");
 
         try {
-            ObjectOutputStream oout = new ObjectOutputStream(toServerSocket.getOutputStream());
-            ObjectInputStream oin = new ObjectInputStream(toServerSocket.getInputStream());
-
-            while (isClientRunning) {
-                try {
-                    // Ler o tipo de operação do cliente
-                    if (oin.readObject() instanceof ServerOperation) {
-
-                        ServerOperation operation = (ServerOperation) oin.readObject();
-
-                        String operationType = operation.getOperation();
-                        System.out.println("OPERATION: " + operationType);
-
-                        // Lidar com base no tipo de operação
-                        switch (operationType) {
-                            case Constants.REFRESH_EVENTS:
-                                refreshEvents(oin);
-                                break;
-                            case Constants.REFRESH_ATTENDANCES:
-                                refreshAttendances(oin);
-                                break;
-                            default:
-                                System.out.println("[ClientThread] Unsupported Operation: " + operationType);
-                                break;
-                        }
-                    }
-                } catch (EOFException e) {
-                    System.out.println("[ClientThread] Client Disconnected.");
-                    System.out.println("[ClientThread] id " + this.getId() + " Stoped.");
-                    //server.getServerThreadsList().remove(this);
-                } catch (Exception e) {
-                    System.out.println("[ClientThread] Communication error: " + e.getMessage());
-                    //server.getServerThreadsList().remove(this);
-                }
-            }
-            oin.close();
+            oout.writeObject("CONTINUOUS_COMMUNICATION");
+            oout.flush();
         } catch (IOException e) {
-            System.out.println("[ClientThread] Error creating input/output streams: " + e.getMessage());
+            stopClientThread();
+        }
+
+        while (isClientRunning) {
+            try {
+                ServerOperation operation = (ServerOperation) oin.readObject();
+
+                switch (operation.getOperation()) {
+                    case Constants.REFRESH_EVENTS:
+                        refreshEvents();
+                        break;
+                    case Constants.REFRESH_ATTENDANCES:
+                        refreshAttendances(operation);
+                        break;
+                    default:
+                        System.out.println("[ClientThread] Unsupported Operation");
+                        break;
+                }
+
+            } catch (EOFException e) {
+                System.out.println("[ClientThread] Client Disconnected.");
+                System.out.println("[ClientThread] id " + this.getId() + " Stoped.");
+                break;
+            } catch (Exception e) {
+                System.out.println("[ClientThread] Communication error: " + e.getMessage());
+                break;
+            }
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void refreshEvents(ObjectInputStream oin) throws IOException, ClassNotFoundException {
-//        ArrayList<Event> listEvents = (ArrayList<Event>) oin.readObject();
-//
-//        System.out.println("FODASSSSEEE" + listEvents.size());
-//        client.getClientAuthenticatedController().refreshListEvens(listEvents);
+    private void refreshEvents() {
+        System.out.println("[ClientThread] Refreshing Events...");
+        client.refreshClientEvents();
     }
 
-    private void refreshAttendances(ObjectInputStream oin) {
-
+    private void refreshAttendances(ServerOperation operation) {
+        System.out.println("[ClientThread] Refreshing Attendances...");
+        client.refreshClientAttendances(operation.getEventId());
     }
 }

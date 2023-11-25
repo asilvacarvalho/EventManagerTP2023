@@ -44,6 +44,8 @@ public class ServerThread extends Thread {
 
     private volatile boolean isServerRunning;
 
+    private boolean isContinuosCommunication;
+
     public ServerThread(Socket toClientSocket, String dbUrl, ServerController controller, Server server, ServerService serverService) {
         this.serverController = controller;
         this.toClientSocket = toClientSocket;
@@ -51,9 +53,14 @@ public class ServerThread extends Thread {
         this.server = server;
         this.serverService = serverService;
         this.isServerRunning = true;
+        this.isContinuosCommunication = false;
 
         System.out.println("[ServerThread] Thread id " + this.getId() + " Running.");
         serverController.addToConsole("[ServerThread] Thread id " + this.getId() + " Running.");
+    }
+
+    public boolean isContinuosCommunication() {
+        return isContinuosCommunication;
     }
 
     public void stopServerThread() {
@@ -72,70 +79,77 @@ public class ServerThread extends Thread {
             this.oout = oout;
             this.oin = oin;
 
+            try {
+                String messageType = (String) oin.readObject();
+
+                if (messageType.equals("CONTINUOUS_COMMUNICATION"))
+                    isContinuosCommunication = true;
+            } catch (ClassNotFoundException e) {
+                stopServerThread();
+            }
+
             while (isServerRunning) {
                 try {
-                    // Ler o tipo de operação do cliente
-                    String operationType = (String) oin.readObject();
+                    ServerOperation operation = (ServerOperation) oin.readObject();
 
-                    // Lidar com base no tipo de operação
-                    switch (operationType) {
+                    switch (operation.getOperation()) {
                         case Constants.AUTHENTICATION_REQUEST:
-                            authenticateUser(oin, oout, dbUrl);
+                            authenticateUser(operation);
                             break;
                         case Constants.INSERTUSER_REQUEST:
                             if (isBDFileCopyOngoing()) return;
-                            insertUser(oin, oout, dbUrl);
+                            insertUser(operation);
                             break;
                         case Constants.EDITUSER_REQUEST:
                             if (isBDFileCopyOngoing()) return;
-                            editUser(oin, oout, dbUrl);
+                            editUser(operation);
                             break;
                         case Constants.INSERTUSERKEY_REQUEST:
                             if (isBDFileCopyOngoing()) return;
-                            insertUserKey(oin, oout, dbUrl);
+                            insertUserKey(operation);
                             break;
                         case Constants.LISTUSEREVENTS_REQUEST:
-                            listUserEvents(oin, oout, dbUrl);
+                            listUserEvents(operation);
                             break;
                         case Constants.INSERTEVENT_REQUEST:
                             if (isBDFileCopyOngoing()) return;
-                            insertEvent(oin, oout, dbUrl);
+                            insertEvent(operation);
                             break;
                         case Constants.LISTEVENTS_REQUEST:
-                            listEvents(oout, dbUrl);
+                            listEvents(operation);
                             break;
                         case Constants.EDITEVENT_REQUEST:
                             if (isBDFileCopyOngoing()) return;
-                            editEvent(oin, oout, dbUrl);
+                            editEvent(operation);
                             break;
                         case Constants.DELETEEVENT_REQUEST:
                             if (isBDFileCopyOngoing()) return;
-                            deleteEvent(oin, oout, dbUrl);
+                            deleteEvent(operation);
                             break;
                         case Constants.EVENTHASATTENDENCES_REQUEST:
-                            eventHasAttendences(oin, oout, dbUrl);
+                            eventHasAttendences(operation);
                             break;
                         case Constants.GETEVENTKEY_REQUEST:
-                            getEventKey(oin, oout, dbUrl);
+                            getEventKey(operation);
                             break;
-                        case Constants.GENERATEEVENTKEY_REQUEST:
+                        case Constants.INSERTEVENTKEY_REQUEST:
                             if (isBDFileCopyOngoing()) return;
-                            insertEventKey(oin, oout, dbUrl);
+                            insertEventKey(operation);
                             break;
                         case Constants.LISTATTENDENCES_REQUEST:
-                            listAttendances(oin, oout, dbUrl);
+                            listAttendances(operation);
                             break;
                         case Constants.ADDATTENDENCE_REQUEST:
                             if (isBDFileCopyOngoing()) return;
-                            insertAttendance(oin, oout, dbUrl);
+                            insertAttendance(operation);
                             break;
                         case Constants.DELETEATTENDENCE_REQUEST:
                             if (isBDFileCopyOngoing()) return;
-                            deleteAttendance(oin, oout, dbUrl);
+                            deleteAttendance(operation);
                             break;
                         default:
-                            System.out.println("[ServerThread] Unsupported Operation: " + operationType);
-                            serverController.addToConsole("[ServerThread] Unsupported Operation: " + operationType);
+                            System.out.println("[ServerThread] Unsupported Operation");
+                            serverController.addToConsole("[ServerThread] Unsupported Operation");
                             break;
                     }
 
@@ -164,25 +178,29 @@ public class ServerThread extends Thread {
     }
 
     //USERS
-    private void authenticateUser(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
+    private void authenticateUser(ServerOperation operation) throws SQLException, IOException {
+        User requestUser = operation.getUser();
+
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
-        User requestUser = (User) oin.readObject();
 
         System.out.println("[ServerThread] Authenticating User");
         serverController.addToConsole("[ServerThread] Authenticating User");
 
         User authenticatedUser = EventManagerDB.authenticateUser(conn, requestUser);
 
-        oout.writeObject(authenticatedUser);
+        operation.setUser(authenticatedUser);
+
+        oout.writeObject(operation);
         oout.flush();
 
         conn.close();
     }
 
-    private void insertUser(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        User newUser = (User) oin.readObject();
+    private void insertUser(ServerOperation operation) throws SQLException, IOException {
+        User newUser = operation.getUser();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Inserting User");
         serverController.addToConsole("[ServerThread] Inserting User");
 
@@ -191,14 +209,17 @@ public class ServerThread extends Thread {
         if (existingUser != null) {
             System.err.println("[ServerThread] Error inserting user, email already exists");
             serverController.addToConsole("[ServerThread] Error inserting user, email already exists");
-            oout.writeObject(false);
+            operation.setResult(false);
+            oout.writeObject(operation);
             oout.flush();
+            conn.close();
             return;
         }
 
         synchronized (lock) {
             boolean success = EventManagerDB.insertUser(conn, newUser);
-            oout.writeObject(success);
+            operation.setResult(success);
+            oout.writeObject(operation);
             oout.flush();
 
             if (success)
@@ -210,10 +231,11 @@ public class ServerThread extends Thread {
         conn.close();
     }
 
-    private void editUser(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        User newUser = (User) oin.readObject();
+    private void editUser(ServerOperation operation) throws SQLException, IOException {
+        User newUser = operation.getUser();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Editing User");
         serverController.addToConsole("[ServerThread] Editing User");
 
@@ -222,14 +244,17 @@ public class ServerThread extends Thread {
         if (existingUser == null) {
             System.err.println("[ServerThread] Error updating user, email doesn't exists");
             serverController.addToConsole("[ServerThread] Error updating user, email doesn't exists");
-            oout.writeObject(false);
+            operation.setResult(false);
+            oout.writeObject(operation);
             oout.flush();
+            conn.close();
             return;
         }
 
         synchronized (lock) {
             boolean success = EventManagerDB.editUser(conn, newUser);
-            oout.writeObject(success);
+            operation.setResult(success);
+            oout.writeObject(operation);
             oout.flush();
 
             if (success)
@@ -241,10 +266,11 @@ public class ServerThread extends Thread {
         conn.close();
     }
 
-    private void listUserEvents(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        String username = (String) oin.readObject();
+    private void listUserEvents(ServerOperation operation) throws SQLException, IOException {
+        String username = operation.getUserName();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Listing User Events");
         serverController.addToConsole("[ServerThread] Listing User Events");
 
@@ -256,41 +282,49 @@ public class ServerThread extends Thread {
             listEvents = EventManagerDB.listUserEvents(conn, eventIds);
         }
 
-        oout.writeObject(listEvents);
+        operation.setListEvents(listEvents);
+        oout.writeObject(operation);
         oout.flush();
 
         conn.close();
     }
 
     //EVENTS
-    private void listEvents(ObjectOutputStream oout, String dbUrl) throws SQLException, IOException {
+    private void listEvents(ServerOperation operation) throws SQLException, IOException {
+
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Listing Events");
         serverController.addToConsole("[ServerThread] Listing Events");
 
         ArrayList<Event> listEvents = EventManagerDB.listEvents(conn);
 
-        oout.writeObject(listEvents);
+        operation.setListEvents(listEvents);
+        oout.writeObject(operation);
         oout.flush();
 
         conn.close();
     }
 
-    private void insertEvent(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        Event newEvent = (Event) oin.readObject();
+    private void insertEvent(ServerOperation operation) throws SQLException, IOException {
+        Event newEvent = operation.getEvent();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Inserting Event");
         serverController.addToConsole("[ServerThread] Inserting Event");
 
         synchronized (lock) {
             boolean success = EventManagerDB.insertEvent(conn, newEvent);
 
-            oout.writeObject(success);
+            operation.setResult(success);
+            oout.writeObject(operation);
             oout.flush();
 
-            if (success)
+            if (success) {
                 serverService.inserEvent(server.getDbVersion(), newEvent);
+                server.refreshClientEvents();
+            }
 
             incrementDBVersion(success, conn);
         }
@@ -298,10 +332,11 @@ public class ServerThread extends Thread {
         conn.close();
     }
 
-    private void editEvent(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        Event newEvent = (Event) oin.readObject();
+    private void editEvent(ServerOperation operation) throws SQLException, IOException {
+        Event newEvent = operation.getEvent();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Editing Event");
         serverController.addToConsole("[ServerThread] Editing Event");
 
@@ -310,19 +345,24 @@ public class ServerThread extends Thread {
         if (existingEvent == null) {
             System.err.println("[ServerThread] Event with ID " + newEvent.getId() + " not found.");
             serverController.addToConsole("[ServerThread] Event with ID " + newEvent.getId() + " not found.");
-            oout.writeObject(false);
+            operation.setResult(false);
+            oout.writeObject(operation);
             oout.flush();
+            conn.close();
             return;
         }
 
         synchronized (lock) {
             boolean success = EventManagerDB.editEvent(conn, newEvent);
 
-            oout.writeObject(success);
+            operation.setResult(success);
+            oout.writeObject(operation);
             oout.flush();
 
-            if (success)
+            if (success) {
                 serverService.editEvent(server.getDbVersion(), newEvent);
+                server.refreshClientEvents();
+            }
 
             incrementDBVersion(success, conn);
         }
@@ -330,10 +370,11 @@ public class ServerThread extends Thread {
         conn.close();
     }
 
-    private void deleteEvent(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        Event newEvent = (Event) oin.readObject();
+    private void deleteEvent(ServerOperation operation) throws SQLException, IOException {
+        Event newEvent = operation.getEvent();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Deleting Event");
         serverController.addToConsole("[ServerThread] Deleting Event");
 
@@ -341,10 +382,13 @@ public class ServerThread extends Thread {
             synchronized (lock) {
                 boolean success = EventManagerDB.deleteEvent(conn, newEvent);
 
-                oout.writeObject(success);
+                operation.setResult(success);
+                oout.writeObject(operation);
                 oout.flush();
-                if (success)
+                if (success) {
                     serverService.deleteEvent(server.getDbVersion(), newEvent);
+                    server.refreshClientEvents();
+                }
 
                 incrementDBVersion(success, conn);
             }
@@ -352,91 +396,106 @@ public class ServerThread extends Thread {
             System.err.println("[ServerThread] Event cannot be deleted because it has attendees.");
             serverController.addToConsole("[ServerThread] Event cannot be deleted because it has attendees.");
 
-            oout.writeObject(false);
+            operation.setResult(false);
+            oout.writeObject(operation);
             oout.flush();
         }
 
         conn.close();
     }
 
-    private void eventHasAttendences(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        int eventId = (int) oin.readObject();
+    private void eventHasAttendences(ServerOperation operation) throws SQLException, IOException {
+        int eventId = operation.getEventId();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Checking Event Attendances");
         serverController.addToConsole("[ServerThread] Checking Event Attendances");
 
-        boolean eventHasAttendences = EventManagerDB.eventHasAttendences(conn, eventId);
+        boolean success = EventManagerDB.eventHasAttendences(conn, eventId);
 
-        oout.writeObject(eventHasAttendences);
+        operation.setResult(success);
+        oout.writeObject(operation);
         oout.flush();
 
         conn.close();
     }
 
-    private void listAttendances(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        int eventId = (int) oin.readObject();
+    private void listAttendances(ServerOperation operation) throws SQLException, IOException {
+        int eventId = operation.getEventId();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Listing Attendances for Event");
         serverController.addToConsole("[ServerThread] Listing Attendances for Event");
 
-        ArrayList<Attendance> listEvents = EventManagerDB.listAttendancesForEvent(conn, eventId);
+        ArrayList<Attendance> listAttendances = EventManagerDB.listAttendancesForEvent(conn, eventId);
 
-        oout.writeObject(listEvents);
+        operation.setListAttendances(listAttendances);
+        oout.writeObject(operation);
         oout.flush();
     }
 
-    private void insertAttendance(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        Attendance newAttendance = (Attendance) oin.readObject();
+    private void insertAttendance(ServerOperation operation) throws SQLException, IOException {
+        Attendance newAttendance = operation.getAttendance();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Inserting Attendance");
         serverController.addToConsole("[ServerThread] Inserting Attendance");
 
         synchronized (lock) {
             boolean success = EventManagerDB.insertAttendanceEvent(conn, newAttendance.getEventId(), newAttendance.getUsername());
 
-            oout.writeObject(success);
+            operation.setResult(success);
+            oout.writeObject(operation);
             oout.flush();
 
-            if (success)
+            if (success) {
                 serverService.inserAttendance(server.getDbVersion(), newAttendance.getEventId(), newAttendance.getUsername());
+                server.refreshClientAttendances(newAttendance.getEventId());
+
+                sendEmail(newAttendance.getUsername(), "Attendence Inserted", "Attendence for " + newAttendance.getEventId() + " Inserted");
+            }
 
             incrementDBVersion(success, conn);
-
-            sendEmail(success, newAttendance.getUsername(), "Attendence Inserted", "Attendence for " + newAttendance.getEventId() + " Inserted");
         }
 
         conn.close();
     }
 
-    private void deleteAttendance(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        Attendance newAttendance = (Attendance) oin.readObject();
+    private void deleteAttendance(ServerOperation operation) throws SQLException, IOException {
+        Attendance newAttendance = operation.getAttendance();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Deleting Attendance");
         serverController.addToConsole("[ServerThread] Deleting Attendance");
 
         synchronized (lock) {
             boolean success = EventManagerDB.deletePresenceFromEvent(conn, newAttendance.getEventId(), newAttendance.getUsername());
 
-            oout.writeObject(success);
+            System.out.println("TESTING DELETE ATT: " + operation.getOperation());
+            operation.setResult(success);
+            oout.writeObject(operation);
             oout.flush();
 
-            if (success)
+            if (success) {
                 serverService.deleteAttendance(server.getDbVersion(), newAttendance.getEventId(), newAttendance.getUsername());
+                server.refreshClientAttendances(newAttendance.getEventId());
+
+                sendEmail(newAttendance.getUsername(), "Attendence Deleted", "Attendence from " + newAttendance.getEventId() + " Deleted");
+            }
 
             incrementDBVersion(success, conn);
-            sendEmail(success, newAttendance.getUsername(), "Attendence Deleted", "Attendence from " + newAttendance.getEventId() + " Deleted");
         }
 
         conn.close();
     }
 
     //EVENT KEY
-    private void getEventKey(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        int eventId = (int) oin.readObject();
+    private void getEventKey(ServerOperation operation) throws SQLException, IOException {
+        int eventId = operation.getEventId();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
         System.out.println("[ServerThread] Getting Event Key");
@@ -444,16 +503,18 @@ public class ServerThread extends Thread {
 
         EventKey eventKey = EventManagerDB.getEventKey(conn, eventId);
 
-        oout.writeObject(eventKey);
+        operation.setEventKey(eventKey);
+        oout.writeObject(operation);
         oout.flush();
 
         conn.close();
     }
 
-    private void insertEventKey(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        EventKey eventKey = (EventKey) oin.readObject();
+    private void insertEventKey(ServerOperation operation) throws SQLException, IOException {
+        EventKey eventKey = operation.getEventKey();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Inserting Event Key");
         serverController.addToConsole("[ServerThread] Inserting Event Key");
 
@@ -476,7 +537,8 @@ public class ServerThread extends Thread {
                 }
             }
 
-            oout.writeObject(success);
+            operation.setResult(success);
+            oout.writeObject(operation);
             oout.flush();
 
             incrementDBVersion(success, conn);
@@ -486,10 +548,11 @@ public class ServerThread extends Thread {
     }
 
     //USER KEY
-    private void insertUserKey(ObjectInputStream oin, ObjectOutputStream oout, String dbUrl) throws SQLException, IOException, ClassNotFoundException {
-        UserKey userKey = (UserKey) oin.readObject();
+    private void insertUserKey(ServerOperation operation) throws SQLException, IOException {
+        UserKey userKey = operation.getUserKey();
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbUrl);
+
         System.out.println("[ServerThread] Inserting User Attendance");
         serverController.addToConsole("[ServerThread] Inserting User Attendance");
 
@@ -498,7 +561,8 @@ public class ServerThread extends Thread {
         if (eventId < 0) {
             System.err.println("[ServerThread] Insert User Key Error: Invalid Key");
             serverController.addToConsole("[ServerThread] Insert User Key Error: Invalid Key");
-            oout.writeObject(false);
+            operation.setResult(false);
+            oout.writeObject(operation);
             oout.flush();
             conn.close();
             return;
@@ -517,7 +581,8 @@ public class ServerThread extends Thread {
         if (startDate == null || endDate == null) {
             System.err.println("[ServerThread] Insert User Key Error");
             serverController.addToConsole("[ServerThread] Insert User Key Error");
-            oout.writeObject(false);
+            operation.setResult(false);
+            oout.writeObject(operation);
             oout.flush();
             conn.close();
             return;
@@ -528,7 +593,8 @@ public class ServerThread extends Thread {
             if (eventKey == null) {
                 System.err.println("[ServerThread] Insert User Key Error");
                 serverController.addToConsole("[ServerThread] Insert User Key Error");
-                oout.writeObject(false);
+                operation.setResult(false);
+                oout.writeObject(operation);
                 oout.flush();
                 conn.close();
                 return;
@@ -539,26 +605,33 @@ public class ServerThread extends Thread {
                 synchronized (lock) {
                     boolean success = EventManagerDB.insertPresenceForEvent(conn, eventId, userKey.getUsername());
 
-                    oout.writeObject(success);
+                    operation.setResult(success);
+                    oout.writeObject(operation);
                     oout.flush();
 
-                    if (success)
+                    if (success) {
                         serverService.inserAttendance(server.getDbVersion(), eventId, userKey.getUsername());
+                        //server.refreshClientAttendances();
+
+                        sendEmail(userKey.getUsername(), "Attendence Inserted", "Attendence for " + eventId + " Inserted");
+                    }
 
                     incrementDBVersion(success, conn);
 
-                    sendEmail(success, userKey.getUsername(), "Attendence Inserted", "Attendence for " + eventId + " Inserted");
+
                 }
             } else {
                 System.err.println("[ServerThread] Insert User Key Error: Current date is after the event key end date");
                 serverController.addToConsole("[ServerThread] Insert User Key Error: Current date is after the event key end date");
-                oout.writeObject(false);
+                operation.setResult(false);
+                oout.writeObject(operation);
                 oout.flush();
             }
         } else {
             System.err.println("[ServerThread] Insert User Key Error: Current date is not within the event date range");
             serverController.addToConsole("[ServerThread] Insert User Key Error: Current date is not within the event date range");
-            oout.writeObject(false);
+            operation.setResult(false);
+            oout.writeObject(operation);
             oout.flush();
         }
 
@@ -589,9 +662,7 @@ public class ServerThread extends Thread {
     }
 
     //EMAIL - TODO: o google não deixa a conta ter acesso a ligações menos seguras...
-    private void sendEmail(boolean send, String recipientEmail, String subject, String body) {
-        if (!send) return;
-
+    private void sendEmail(String recipientEmail, String subject, String body) {
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
@@ -648,5 +719,20 @@ public class ServerThread extends Thread {
         }
 
         return tries > 5;
+    }
+
+    public void refreshClientEvents() throws IOException {
+        ServerOperation serverOperation = new ServerOperation(Constants.REFRESH_EVENTS);
+
+        oout.writeObject(serverOperation);
+        oout.flush();
+    }
+
+    public void refreshClientAttendances(int eventId) throws IOException {
+        ServerOperation serverOperation = new ServerOperation(Constants.REFRESH_ATTENDANCES);
+        serverOperation.setEventId(eventId);
+
+        oout.writeObject(serverOperation);
+        oout.flush();
     }
 }
