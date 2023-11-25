@@ -5,15 +5,14 @@ import pt.isec.eventmanager.serverBackup.ServerBackup;
 import pt.isec.eventmanager.serverBackup.ServerBackupController;
 import pt.isec.eventmanager.util.Constants;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
 import java.net.SocketTimeoutException;
 
-public class HeartBeatThread extends Thread implements Serializable {
-    @Serial
-    private static final long serialVersionUID = 1L;
-
+public class HeartBeatThread extends Thread {
     private final MulticastSocket multicastSocket;
     private final ServerBackupController controller;
     private final ServerBackup serverBackup;

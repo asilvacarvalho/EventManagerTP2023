@@ -54,13 +54,15 @@ public class ServerController {
             heartBeatTextArea.clear();
             addToConsole("Starting server");
 
+            if (!startServer()) return;
+
             clientTcpPortField.setDisable(true);
             regPortField.setDisable(true);
             dbLocationField.setDisable(true);
             rmiBackupServiceNameField.setDisable(true);
 
             startButton.setText("Stop");
-            startServer();
+
         } else {
             addToConsole("Shutting down server");
 
@@ -79,7 +81,7 @@ public class ServerController {
         }
     }
 
-    private void startServer() {
+    private boolean startServer() {
         String clientTcpPort = clientTcpPortField.getText().trim();
         String dbLocation = dbLocationField.getText().trim();
         String regPortText = regPortField.getText().trim();
@@ -88,7 +90,7 @@ public class ServerController {
         if (clientTcpPort.isEmpty() || regPortText.isEmpty() || dbLocation.isEmpty() || rmiBackupServiceName.isEmpty()) {
             System.out.println("[ServerController] Information missing to start de server!");
             showError("Information missing to start de server!");
-            return;
+            return false;
         }
 
         this.server = new Server();
@@ -106,6 +108,8 @@ public class ServerController {
             System.out.println("[ServerController] Information missing to start de server!");
             showError("Information missing to start de server!");
         }
+
+        return true;
     }
 
     public void stopServer() {
