@@ -47,8 +47,6 @@ public class ListAttendancesController {
     private ClientAuthenticatedController parentController;
     private Event event;
 
-    private ArrayList<Attendance> listAttendances;
-
     @FXML
     public void initialize() {
         initOptionsColumn();
@@ -109,9 +107,16 @@ public class ListAttendancesController {
     public void initListAttendancesController(ArrayList<Attendance> listAttendances, ClientAuthenticatedController controller, Event event) {
         this.parentController = controller;
         this.event = event;
-        this.listAttendances = listAttendances;
+
+        attendancesTableView.getItems().clear();
         attendancesTableView.getItems().addAll(listAttendances);
+
         initEventInfo();
+    }
+
+    public void refreshList(ArrayList<Attendance> listAttendances) {
+        attendancesTableView.getItems().clear();
+        attendancesTableView.getItems().addAll(listAttendances);
     }
 
     private void initOptionsColumn() {

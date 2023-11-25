@@ -39,7 +39,7 @@ public class Constants implements Serializable {
     public static final String DELETEATTENDENCE_REQUEST = "DELETEATTENDENCE";
 
     //EVENT KEY
-    public static final String GENERATEEVENTKEY_REQUEST = "GENERATEEVENTKEY";
+    public static final String INSERTEVENTKEY_REQUEST = "INSERTEVENTKEY";
     public static final String GETEVENTKEY_REQUEST = "GETEVENTKEY";
 
     //USER KEY

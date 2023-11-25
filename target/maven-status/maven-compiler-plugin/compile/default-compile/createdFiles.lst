@@ -4,6 +4,7 @@ pt\isec\eventmanager\MainServer.class
 pt\isec\eventmanager\client\ClientController.class
 pt\isec\eventmanager\db\EventoModel.class
 pt\isec\eventmanager\client\Client.class
+pt\isec\eventmanager\client\ClientThread.class
 pt\isec\eventmanager\rmi\BackupService.class
 pt\isec\eventmanager\client\EditUserController.class
 pt\isec\eventmanager\client\ListAttendancesController.class
@@ -33,6 +34,7 @@ pt\isec\eventmanager\client\ListEventsController.class
 pt\isec\eventmanager\util\Utils.class
 pt\isec\eventmanager\MainClient.class
 pt\isec\eventmanager\client\ListAttendancesController$1$1.class
+pt\isec\eventmanager\server\ServerResponse.class
 pt\isec\eventmanager\serverBackup\ServerBackupController.class
 pt\isec\eventmanager\util\Utils$1.class
 module-info.class
@@ -47,6 +49,7 @@ pt\isec\eventmanager\client\ListUserEventsController$1.class
 pt\isec\eventmanager\client\ListEventsController$1.class
 pt\isec\eventmanager\users\UserKey.class
 pt\isec\eventmanager\rmi\ServerServiceInterface.class
+pt\isec\eventmanager\server\ServerOperation.class
 pt\isec\eventmanager\db\CodigoRegistoModel.class
 pt\isec\eventmanager\heartBeat\HeartBeatThread.class
 pt\isec\eventmanager\client\ListEventsController$2$1.class

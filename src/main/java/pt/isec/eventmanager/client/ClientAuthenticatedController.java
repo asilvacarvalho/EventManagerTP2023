@@ -51,8 +51,8 @@ public class ClientAuthenticatedController {
     private AnchorPane loadingPane;
     private PauseTransition infoPauseTransition;
 
-    private ArrayList<Attendance> listAttendances;
-    private ArrayList<Event> listEvents;
+    private ListEventsController listEventsController;
+    private ListAttendancesController listAttendancesController;
 
     @FXML
     public void initialize() {
@@ -249,14 +249,17 @@ public class ClientAuthenticatedController {
 
             Pane listEventsPane = loader.load();
 
+            showLoading();
+
             Thread thread = new Thread(() -> {
-                ArrayList<Event> listEvents = client.listEvents();
+                ArrayList<Event> listEvents = new ArrayList<>(client.listEvents());
 
                 Platform.runLater(() -> {
                     mainContentArea.getChildren().clear();
                     mainContentArea.getChildren().add(listEventsPane);
-                    ListEventsController listEventsController = loader.getController();
+                    listEventsController = loader.getController();
                     listEventsController.initListEventsController(listEvents, this);
+
                 });
             });
             thread.start();
@@ -317,8 +320,6 @@ public class ClientAuthenticatedController {
 
         alert.showAndWait().ifPresent(buttonType -> {
             if (buttonType == buttonTypeYes) {
-                showLoading();
-
                 Thread thread = new Thread(() -> {
                     boolean success = client.deleteEvent(event);
 
@@ -328,10 +329,8 @@ public class ClientAuthenticatedController {
                         } else {
                             showInfo("Error deleting event", LabelType.ERROR);
                         }
-                        //initListEvents();
                     });
                 });
-
                 thread.start();
             }
         });
@@ -343,13 +342,15 @@ public class ClientAuthenticatedController {
 
             Pane listAttendancesPane = loader.load();
 
+            showLoading();
+
             Thread thread = new Thread(() -> {
-                listAttendances = client.listAttendences(event.getId());
+                ArrayList<Attendance> listAttendances = new ArrayList<>(client.listAttendences(event.getId()));
 
                 Platform.runLater(() -> {
                     mainContentArea.getChildren().clear();
                     mainContentArea.getChildren().add(listAttendancesPane);
-                    ListAttendancesController listAttendancesController = loader.getController();
+                    listAttendancesController = loader.getController();
                     listAttendancesController.initListAttendancesController(listAttendances, this, event);
                 });
             });
@@ -395,7 +396,6 @@ public class ClientAuthenticatedController {
                 } else {
                     showInfo("Operation Error!", LabelType.ERROR);
                 }
-                mainContentArea.requestLayout();
             });
         });
         thread.start();
@@ -413,8 +413,6 @@ public class ClientAuthenticatedController {
 
         alert.showAndWait().ifPresent(buttonType -> {
             if (buttonType == buttonTypeYes) {
-                showLoading();
-
                 Thread thread = new Thread(() -> {
                     boolean success = client.deleteAttendance(registration);
 
@@ -424,10 +422,8 @@ public class ClientAuthenticatedController {
                         } else {
                             showInfo("Operation Error!", LabelType.ERROR);
                         }
-                        listEventAttendances(event);
                     });
                 });
-
                 thread.start();
             }
         });
@@ -447,12 +443,31 @@ public class ClientAuthenticatedController {
         return pane;
     }
 
-    private void refreshListEventAttendances(Event event) {
-        System.out.println("ATUALIZA EVENTO: " + event.getId());
+    public void refreshListEventAttendances(int eventId) {
+        System.out.println("ATUALIZA ATTENDANCES for EVENT " + eventId);
+        Thread thread = new Thread(() -> {
+            ArrayList<Attendance> listAttendances = new ArrayList<>(client.listAttendences(eventId));
+
+            Platform.runLater(() -> {
+                if (listAttendancesController != null) {
+                    listAttendancesController.refreshList(listAttendances);
+                }
+            });
+        });
+        thread.start();
     }
 
-    public void refreshListEvens(ArrayList<Event> listEvents) {
-        System.out.println("ATUALIZA EVENTOS: ");
-        //this.listEvents = new ArrayList<>(listEvents);
+    public void refreshListEvens() {
+        System.out.println("ATUALIZA EVENTOS");
+        Thread thread = new Thread(() -> {
+            ArrayList<Event> listEvents = new ArrayList<>(client.listEvents());
+
+            Platform.runLater(() -> {
+                if (listEventsController != null) {
+                    listEventsController.refreshList(listEvents);
+                }
+            });
+        });
+        thread.start();
     }
 }

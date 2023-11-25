@@ -28,6 +28,7 @@ public class ListEventsController {
     private TableColumn<Event, String> optionsColumn;
 
     private ClientAuthenticatedController clientAuthenticatedController;
+
     private ArrayList<Event> listEvents;
 
     @FXML
@@ -126,6 +127,11 @@ public class ListEventsController {
     public void initListEventsController(ArrayList<Event> listEvents, ClientAuthenticatedController controller) {
         this.clientAuthenticatedController = controller;
         this.listEvents = listEvents;
+        eventTableView.getItems().clear();
+        eventTableView.getItems().addAll(listEvents);
+    }
+
+    public void refreshList(ArrayList<Event> listEvents) {
         eventTableView.getItems().clear();
         eventTableView.getItems().addAll(listEvents);
     }

@@ -11,10 +11,12 @@ D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\event
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\client\ListEventsController.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\client\ClientAuthenticatedController.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\rmi\BackupService.java
+D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\client\ClientThread.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\events\Attendance.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\rmi\ServerService.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\rmi\ServerServiceInterface.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\rmi\ServerServiceObserver.java
+D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\server\ServerResponse.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\util\Utils.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\heartBeat\HeartBeatThread.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\rmi\ServerServiceObserverInterface.java
@@ -30,6 +32,7 @@ D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\event
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\rmi\BackupServerInterface.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\client\UserKeyController.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\client\ListEventsActionsController.java
+D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\server\ServerOperation.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\events\Event.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\users\UserKey.java
 D:\GoogleDrive\ISEC 2023_2024\PD\TP2023\EventManager\src\main\java\pt\isec\eventmanager\util\LabelType.java

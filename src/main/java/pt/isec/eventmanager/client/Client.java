@@ -3,6 +3,7 @@ package pt.isec.eventmanager.client;
 import pt.isec.eventmanager.events.Attendance;
 import pt.isec.eventmanager.events.Event;
 import pt.isec.eventmanager.events.EventKey;
+import pt.isec.eventmanager.server.ServerOperation;
 import pt.isec.eventmanager.users.User;
 import pt.isec.eventmanager.users.UserKey;
 import pt.isec.eventmanager.util.Constants;
@@ -23,7 +24,6 @@ public class Client {
     private Socket socket;
     private ObjectInputStream oin;
     private ObjectOutputStream oout;
-
 
     private ClientAuthenticatedController clientAuthenticatedController;
     private ClientThread clientThread;
@@ -50,7 +50,30 @@ public class Client {
     }
 
     public String connect() {
+        try {
+            Socket socket = new Socket(InetAddress.getByName(serverAddress), Integer.parseInt(serverPort));
+            ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
+            ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream());
+
+            startListeningforRefresh(socket, oin, oout);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return null;
+    }
+
+    public void startListeningforRefresh(Socket socket, ObjectInputStream oin, ObjectOutputStream oout) {
+        clientThread = new ClientThread(socket, oin, oout, this);
+        clientThread.setDaemon(true);
+        clientThread.start();
+    }
+
+    public void refreshClientEvents() {
+        clientAuthenticatedController.refreshListEvens();
+    }
+
+    public void refreshClientAttendances(int eventId) {
+        clientAuthenticatedController.refreshListEventAttendances(eventId);
     }
 
     //USERS
@@ -60,17 +83,24 @@ public class Client {
             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream());
 
-            oout.writeObject(Constants.AUTHENTICATION_REQUEST);
-            oout.flush();
-
-            oout.writeObject(new User(username, password));
-            oout.flush();
-
             try {
-                User authenticatedUser = (User) oin.readObject();
+                try {
+                    oout.writeObject("DATABASE_OPERATIONS");
+                    oout.flush();
+                } catch (IOException e) {
+                    return false;
+                }
 
-                if (authenticatedUser != null) {
-                    this.user = authenticatedUser;
+                ServerOperation operation = new ServerOperation(Constants.AUTHENTICATION_REQUEST);
+                operation.setUser(new User(username, password));
+
+                oout.writeObject(operation);
+                oout.flush();
+
+                ServerOperation response = (ServerOperation) oin.readObject();
+
+                if (response.getOperation().equals(Constants.AUTHENTICATION_REQUEST) && response.getUser() != null) {
+                    this.user = response.getUser();
                     this.socket = socket;
                     this.oin = oin;
                     this.oout = oout;
@@ -89,9 +119,6 @@ public class Client {
     }
 
     public void logout() {
-        this.serverAddress = "";
-        this.serverPort = "";
-
         if (clientThread != null)
             clientThread.interrupt();
 
@@ -114,18 +141,15 @@ public class Client {
 
             socket.setSoTimeout(Constants.SERVER_TIMEOUT * 1000);
 
-            // Enviar o tipo de operação
-            oout.writeObject(Constants.INSERTUSER_REQUEST);
-            oout.flush();
-
-            oout.writeObject(new User(email, password, name, studentNumber, false));
+            ServerOperation operation = new ServerOperation(Constants.INSERTUSER_REQUEST);
+            operation.setUser(new User(email, password, name, studentNumber, false));
+            oout.writeObject(operation);
             oout.flush();
 
             try {
-                // Receber resposta do servidor
-                boolean registrationSuccess = (boolean) oin.readObject();
+                ServerOperation response = (ServerOperation) oin.readObject();
 
-                if (registrationSuccess) {
+                if (response.getOperation().equals(Constants.INSERTUSER_REQUEST) && response.getResult()) {
                     return true;
                 }
             } catch (SocketTimeoutException e) {
@@ -143,15 +167,15 @@ public class Client {
         if (socket == null || oin == null || oout == null) return false;
 
         try {
-            oout.writeObject(Constants.EDITUSER_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.EDITUSER_REQUEST);
+            operation.setUser(user);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(user);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            boolean success = (boolean) oin.readObject();
-
-            if (success) {
+            if (response.getOperation().equals(Constants.EDITUSER_REQUEST) && response.getResult()) {
                 this.user = user;
                 return true;
             }
@@ -162,21 +186,28 @@ public class Client {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public ArrayList<Event> listUserEvents(String username) {
         if (socket == null || oin == null || oout == null) return null;
 
         try {
-            oout.writeObject(Constants.LISTUSEREVENTS_REQUEST);
-            oout.flush();
+            ServerOperation operation = new ServerOperation(Constants.LISTUSEREVENTS_REQUEST);
 
             if (user.isAdmin())
-                oout.writeObject(username);
+                operation.setUserName(username);
             else
-                oout.writeObject(user.getEmail());
+                operation.setUserName(user.getEmail());
+
+            oout.writeObject(operation);
             oout.flush();
 
-            return (ArrayList<Event>) oin.readObject();
+            ServerOperation response = (ServerOperation) oin.readObject();
+
+            if (response.getOperation().equals(Constants.LISTUSEREVENTS_REQUEST) && response.getListEvents() != null) {
+                return response.getListEvents();
+            }
+
+            return null;
+
         } catch (IOException | ClassNotFoundException e) {
             return null;
         }
@@ -187,29 +218,38 @@ public class Client {
         if (socket == null || oin == null || oout == null) return false;
 
         try {
-            oout.writeObject(Constants.INSERTEVENT_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.INSERTEVENT_REQUEST);
+            operation.setEvent(event);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(event);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            boolean registrationSuccess = (boolean) oin.readObject();
+            if (response.getOperation().equals(Constants.INSERTEVENT_REQUEST))
+                return response.getResult();
 
-            return registrationSuccess;
+            return false;
         } catch (IOException | ClassNotFoundException e) {
             return false;
         }
     }
 
-    @SuppressWarnings("unchecked")
     public ArrayList<Event> listEvents() {
         if (socket == null || oin == null || oout == null) return null;
 
         try {
-            oout.writeObject(Constants.LISTEVENTS_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.LISTEVENTS_REQUEST);
+            oout.writeObject(operation);
             oout.flush();
 
-            return (ArrayList<Event>) oin.readObject();
+            ServerOperation response = (ServerOperation) oin.readObject();
+
+            if (response.getOperation().equals(Constants.LISTEVENTS_REQUEST) && response.getListEvents() != null) {
+                return response.getListEvents();
+            }
+
+            return null;
         } catch (IOException | ClassNotFoundException e) {
             return null;
         }
@@ -219,16 +259,18 @@ public class Client {
         if (socket == null || oin == null || oout == null) return false;
 
         try {
-            oout.writeObject(Constants.EDITEVENT_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.EDITEVENT_REQUEST);
+            operation.setEvent(event);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(event);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            boolean success = (boolean) oin.readObject();
+            if (response.getOperation().equals(Constants.EDITEVENT_REQUEST))
+                return response.getResult();
 
-            return success;
-
+            return false;
         } catch (IOException | ClassNotFoundException e) {
             return false;
         }
@@ -238,15 +280,18 @@ public class Client {
         if (socket == null || oin == null || oout == null) return false;
 
         try {
-            oout.writeObject(Constants.DELETEEVENT_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.DELETEEVENT_REQUEST);
+            operation.setEvent(event);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(event);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            boolean success = (boolean) oin.readObject();
+            if (response.getOperation().equals(Constants.DELETEEVENT_REQUEST))
+                return response.getResult();
 
-            return success;
+            return false;
         } catch (IOException | ClassNotFoundException e) {
             return false;
         }
@@ -256,32 +301,40 @@ public class Client {
         if (socket == null || oin == null || oout == null) return false;
 
         try {
-            oout.writeObject(Constants.EVENTHASATTENDENCES_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.EVENTHASATTENDENCES_REQUEST);
+            operation.setEventId(eventId);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(eventId);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            boolean success = (boolean) oin.readObject();
+            if (response.getOperation().equals(Constants.EVENTHASATTENDENCES_REQUEST))
+                return response.getResult();
 
-            return success;
+            return false;
         } catch (IOException | ClassNotFoundException e) {
             return false;
         }
     }
 
-    @SuppressWarnings("unchecked")
     public ArrayList<Attendance> listAttendences(int eventId) {
         if (socket == null || oin == null || oout == null) return null;
 
         try {
-            oout.writeObject(Constants.LISTATTENDENCES_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.LISTATTENDENCES_REQUEST);
+            operation.setEventId(eventId);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(eventId);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            return (ArrayList<Attendance>) oin.readObject();
+            if (response.getOperation().equals(Constants.LISTATTENDENCES_REQUEST) && response.getListAttendances() != null) {
+                return response.getListAttendances();
+            }
+
+            return null;
         } catch (IOException | ClassNotFoundException e) {
             return null;
         }
@@ -291,15 +344,18 @@ public class Client {
         if (socket == null || oin == null || oout == null) return false;
 
         try {
-            oout.writeObject(Constants.ADDATTENDENCE_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.ADDATTENDENCE_REQUEST);
+            operation.setAttendance(attendance);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(attendance);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            boolean success = (boolean) oin.readObject();
+            if (response.getOperation().equals(Constants.ADDATTENDENCE_REQUEST))
+                return response.getResult();
 
-            return success;
+            return false;
         } catch (IOException | ClassNotFoundException e) {
             return false;
         }
@@ -309,15 +365,18 @@ public class Client {
         if (socket == null || oin == null || oout == null) return false;
 
         try {
-            oout.writeObject(Constants.DELETEATTENDENCE_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.DELETEATTENDENCE_REQUEST);
+            operation.setAttendance(attendance);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(attendance);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            boolean success = (boolean) oin.readObject();
+            if (response.getOperation().equals(Constants.DELETEATTENDENCE_REQUEST))
+                return response.getResult();
 
-            return success;
+            return false;
         } catch (IOException | ClassNotFoundException e) {
             return false;
         }
@@ -328,13 +387,18 @@ public class Client {
         if (socket == null || oin == null || oout == null) return null;
 
         try {
-            oout.writeObject(Constants.GETEVENTKEY_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.GETEVENTKEY_REQUEST);
+            operation.setEvent(event);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(event.getId());
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            return (EventKey) oin.readObject();
+            if (response.getOperation().equals(Constants.GETEVENTKEY_REQUEST) && response.getEventKey() != null)
+                return response.getEventKey();
+
+            return null;
         } catch (IOException | ClassNotFoundException e) {
             return null;
         }
@@ -344,15 +408,18 @@ public class Client {
         if (socket == null || oin == null || oout == null) return false;
 
         try {
-            oout.writeObject(Constants.GENERATEEVENTKEY_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.INSERTEVENTKEY_REQUEST);
+            operation.setEventKey(eventKey);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(eventKey);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            boolean success = (boolean) oin.readObject();
+            if (response.getOperation().equals(Constants.INSERTEVENTKEY_REQUEST))
+                return response.getResult();
 
-            return success;
+            return false;
         } catch (IOException | ClassNotFoundException e) {
             return false;
         }
@@ -363,15 +430,18 @@ public class Client {
         if (socket == null || oin == null || oout == null) return false;
 
         try {
-            oout.writeObject(Constants.INSERTUSERKEY_REQUEST);
+            ServerOperation operation = new ServerOperation(Constants.INSERTUSERKEY_REQUEST);
+            operation.setUserKey(userKey);
+
+            oout.writeObject(operation);
             oout.flush();
 
-            oout.writeObject(userKey);
-            oout.flush();
+            ServerOperation response = (ServerOperation) oin.readObject();
 
-            boolean success = (boolean) oin.readObject();
+            if (response.getOperation().equals(Constants.INSERTUSERKEY_REQUEST))
+                return response.getResult();
 
-            return success;
+            return false;
         } catch (IOException | ClassNotFoundException e) {
             return false;
         }
