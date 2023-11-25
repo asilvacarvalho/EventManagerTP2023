@@ -11,8 +11,6 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
-//TODO: avisar os servidores de backup das atualizações
-
 public class EventManagerDB implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

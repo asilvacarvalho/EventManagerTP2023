@@ -24,20 +24,15 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class ServerBackup {
-    private String dbDirectory;
+    private final String dbDirectory;
     private String dbUrl;
 
     private HeartBeatThread heartbeatListenerThread;
     private HeartBeatMsg heartBeatMsg;
 
-    private InetAddress group;
-    private MulticastSocket socket = null;
-    private NetworkInterface nif;
-
-    private ServerBackupController serverBackupController;
+    private final ServerBackupController serverBackupController;
 
     private ServerServiceInterface serverServiceInterface;
-    private BackupServerService backupServerService;
 
     private ServerServiceObserver observer;
 
@@ -82,8 +77,8 @@ public class ServerBackup {
     public void startHeartBeatLookup() {
         System.out.println("[ServerBackup] Starting heartbeat lookup");
         try {
-            group = InetAddress.getByName(Constants.HEARTBEAT_URL);
-            nif = null;
+            InetAddress group = InetAddress.getByName(Constants.HEARTBEAT_URL);
+            NetworkInterface nif = null;
 
             try {
                 nif = NetworkInterface.getByInetAddress(InetAddress.getByName(Constants.HEARTBEAT_URL));
@@ -93,21 +88,21 @@ public class ServerBackup {
                 return;
             }
 
-            socket = new MulticastSocket(Constants.HEARTBEAT_PORT);
+            MulticastSocket socket = new MulticastSocket(Constants.HEARTBEAT_PORT);
             socket.joinGroup(new InetSocketAddress(group, Constants.HEARTBEAT_PORT), nif);
 
-            //Lanca a thread adicional dedicada a aguardar por datagramas no socket e a processá-los
             heartbeatListenerThread = new HeartBeatThread(socket, serverBackupController, this);
             heartbeatListenerThread.setDaemon(true);
             heartbeatListenerThread.start();
+
         } catch (IOException e) {
             System.out.println("[ServerBackup] Error starting HeartBeat Lookup" + e.getMessage());
-            serverBackupController.addToConsole("[ServerBackup] Error creating NetworkInterface");
+            serverBackupController.addToConsole("[ServerBackup] Error starting HeartBeat Lookup" + e.getMessage());
         }
     }
 
     private void stopHeartBeatLookup() {
-        if (heartbeatListenerThread != null && heartbeatListenerThread.isAlive()) {
+        if (heartbeatListenerThread != null) {
             heartbeatListenerThread.stopHeartBeatThread();
             heartbeatListenerThread.interrupt();
         }
@@ -130,7 +125,7 @@ public class ServerBackup {
 
         FileOutputStream localFileOutputStream = new FileOutputStream(localFilePath);
 
-        backupServerService = new BackupServerService();
+        BackupServerService backupServerService = new BackupServerService();
 
         backupServerService.setFout(localFileOutputStream);
         serverServiceInterface.getDBFile(backupServerService);
@@ -146,6 +141,8 @@ public class ServerBackup {
     }
 
     private void stopObserver() {
+        if (serverServiceInterface == null || observer == null) return;
+
         System.out.println("[ServerBackup] Stopping Observer");
         serverBackupController.addToConsole("[ServerBackup] Stopping Observer");
         try {

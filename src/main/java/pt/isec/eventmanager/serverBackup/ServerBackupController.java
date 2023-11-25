@@ -32,8 +32,6 @@ public class ServerBackupController {
 
     @FXML
     private void initialize() {
-        //TODO: Remove after testing
-        dbLocationField.setText("./DBBackup");
     }
 
     @FXML
@@ -42,11 +40,13 @@ public class ServerBackupController {
             boolean success = checkDBDirectory();
 
             if (success) {
+                this.serverBackup = new ServerBackup(dbLocationField.getText(), this);
                 Thread thread = new Thread(() -> {
-                    this.serverBackup = new ServerBackup(dbLocationField.getText(), this);
                     serverBackup.startHeartBeatLookup();
                 });
+                thread.setDaemon(true);
                 thread.start();
+
                 addToConsole("[ServerBackupController] Server Backup started");
                 running = true;
                 dbLocationField.setDisable(true);
@@ -127,6 +127,7 @@ public class ServerBackupController {
     }
 
     public void stopServer() {
+        if (serverBackup == null) return;
         serverBackup.stopServerBackup();
     }
 }
