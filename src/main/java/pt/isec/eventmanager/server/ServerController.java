@@ -43,11 +43,6 @@ public class ServerController {
 
     @FXML
     private void initialize() {
-        //TODO: Remove after testing
-        clientTcpPortField.setText("6000");
-        regPortField.setText("1099");
-        dbLocationField.setText("./DB");
-        rmiBackupServiceNameField.setText("eventmanagerbackup");
     }
 
     @FXML

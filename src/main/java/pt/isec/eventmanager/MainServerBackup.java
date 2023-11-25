@@ -27,7 +27,7 @@ public class MainServerBackup extends Application {
         });
 
         stage.setOnCloseRequest(event -> {
-            if (serverController != null && serverController.isRunning())
+            if (serverController != null)
                 serverController.stopServer();
         });
     }

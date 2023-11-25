@@ -40,9 +40,6 @@ public class ClientLoginController {
 
     @FXML
     private void initialize() {
-        //TODO: remove after testing
-        emailField.setText("admin");
-        passwordField.setText("admin");
     }
 
     @FXML

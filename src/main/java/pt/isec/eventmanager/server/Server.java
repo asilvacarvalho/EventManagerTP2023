@@ -111,8 +111,8 @@ public class Server {
             // Criação de tabelas e admin
             EventManagerDB.createTables(conn);
             EventManagerDB.createAdmin(conn);
-            //TODO: remover no fim dos testes
-            EventManagerDB.createDummyData(conn);
+
+            //EventManagerDB.createDummyData(conn);
         }
     }
 
@@ -151,6 +151,7 @@ public class Server {
                 serverController.addToConsole("[Server] Error stopping RMI Service: " + e.getMessage());
             }
         }
+        serverService = null;
     }
 
 
@@ -172,6 +173,7 @@ public class Server {
             serverController.addToConsole("[Server] HeartBeat desligado");
             serverController.setHeartBeatServiceOnline(false);
         }
+        heartBeatExecuter = null;
     }
 
     private void sendHeartbeat() {
@@ -232,13 +234,10 @@ public class Server {
         System.out.println("[Server] TCP Server inicialized in port " + serverSocket.getLocalPort() + " ...");
         serverController.addToConsole("[Server] TCP Server inicialized in port " + serverSocket.getLocalPort() + " ...");
 
-        ServerThread serverThread;
-        Socket toClientSocket = null;
-
         while (isServerRunning) {
             try {
-                toClientSocket = serverSocket.accept();
-                serverThread = new ServerThread(toClientSocket, dbURL, serverController, this, serverService);
+                Socket toClientSocket = serverSocket.accept();
+                ServerThread serverThread = new ServerThread(toClientSocket, dbURL, serverController, this, serverService);
                 serverThread.setDaemon(true);
 
                 serverThreadsList.add(serverThread);
@@ -247,30 +246,28 @@ public class Server {
             } catch (Exception e) {
                 System.out.println("[Server] Error in TCPServer: " + e.getMessage());
                 serverController.addToConsole("[Server] Error in TCPServer: " + e.getMessage());
-                if (serverSocket != null) {
-                    serverSocket.close();
-                }
                 break;
             }
         }
 
-        if (toClientSocket != null) {
-            toClientSocket.close();
-        }
-        if (serverSocket != null) {
-            serverSocket.close();
-        }
-    }
-
-    private void stopTCPServerThreads() {
-        for (ServerThread serverThread : serverThreadsList) {
-            serverThread.stopServerThread();
-        }
+        System.out.println("[Server] TCPServer Offline ");
+        serverController.addToConsole("[Server] TCPServer Offline ");
     }
 
     public void stopServer() {
         isServerRunning = false;
-        stopTCPServerThreads();
+
+        try {
+            for (ServerThread serverThread : serverThreadsList) {
+                serverThread.stopServerThread();
+            }
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         stopSendingHeartbeat();
         stopRMIService();
     }

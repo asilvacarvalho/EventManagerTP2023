@@ -27,9 +27,6 @@ public class ClientController {
 
     @FXML
     private void initialize() {
-        //TODO: remove after testing
-        serverAddressField.setText("localhost");
-        serverPortField.setText("6000");
     }
 
     public void initClientController(Stage stage) {

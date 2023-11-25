@@ -169,11 +169,14 @@ public class ServerThread extends Thread {
                     break;
                 }
             }
+
             oout.close();
             oin.close();
+            toClientSocket.close();
+
         } catch (IOException e) {
-            System.out.println("[ServerThread] Error creating input/output streams: " + e.getMessage());
-            serverController.addToConsole("[ServerThread] Error creating input/output streams: " + e.getMessage());
+            System.out.println("[ServerThread] Error: " + e.getMessage());
+            serverController.addToConsole("[ServerThread] Error: " + e.getMessage());
         }
     }
 
@@ -475,7 +478,6 @@ public class ServerThread extends Thread {
         synchronized (lock) {
             boolean success = EventManagerDB.deletePresenceFromEvent(conn, newAttendance.getEventId(), newAttendance.getUsername());
 
-            System.out.println("TESTING DELETE ATT: " + operation.getOperation());
             operation.setResult(success);
             oout.writeObject(operation);
             oout.flush();
